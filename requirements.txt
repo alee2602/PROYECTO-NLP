@@ -1,0 +1,25 @@
+# Interfaz
+streamlit
+
+# Procesamiento de PDF
+pymupdf
+
+# NLP
+spacy
+sentence-transformers
+
+# Recuperación
+faiss-cpu
+rank-bm25
+
+# Orquestación agéntica
+langgraph
+
+# Validación estructurada
+pydantic
+
+# Metadatos bibliográficos
+requests
+
+# Utilidades
+python-dotenv
