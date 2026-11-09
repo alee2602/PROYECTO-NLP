@@ -18,6 +18,14 @@ Formato por entrada:
 
 ---
 
+## [2026-11-09] Cambio de nombre: ClaimTrace → Evidentia
+
+**Contexto**: el nombre "ClaimTrace" se definió en el primer borrador del anteproyecto.
+**Decisión**: renombrar el proyecto a "Evidentia".
+**Alternativas consideradas**: mantener "ClaimTrace".
+**Estado**: confirmada.
+**Gaps abiertos**: falta actualizar el nombre en el documento de anteproyecto (`Anteproyecto_NLP.pdf` / su origen editable), que todavía dice "ClaimTrace" en el título y el resumen ejecutivo.
+
 ## [2026-11-09] Estructura inicial del repositorio
 
 **Contexto**: había que empezar a trabajar en paralelo a completar el anteproyecto, sin esperar a tener el equipo completo.

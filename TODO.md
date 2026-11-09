@@ -7,7 +7,7 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 
 - [x] Redactar secciones 1-11 del anteproyecto (ClaimTrace)
 - [x] Estructurar el repositorio (`src/`, `data/`, `tests/`, `requirements.txt`)
-- [ ] Limpiar typo en el resumen ejecutivo ("ClaimTrace jsjsjs")
+- [ ] Limpiar typo en el resumen ejecutivo ("ClaimTrace jsjsjs") y actualizar el nombre del proyecto a "Evidentia" en todo el documento de anteproyecto
 - [ ] Completar secciones 12-16 del anteproyecto
   - [ ] Sección 12 — Evaluación: banco de pruebas (ver Fase 4) + tabla de métricas con metas
   - [ ] Sección 13 — Seguridad: controles para prompt injection, documentos no autorizados, info sensible, herramientas peligrosas, salidas inválidas, logs

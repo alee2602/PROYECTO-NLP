@@ -1,4 +1,4 @@
-# ClaimTrace
+# Evidentia
 
 Sistema inteligente de análisis y trazabilidad de evidencia en documentos académicos.
 
@@ -6,7 +6,7 @@ Proyecto final del curso CC3103 - Procesamiento de Lenguaje Natural (UVG).
 
 ## Qué hace
 
-ClaimTrace analiza afirmaciones presentes en documentos académicos y evalúa si cuentan
+Evidentia analiza afirmaciones presentes en documentos académicos y evalúa si cuentan
 con evidencia de respaldo dentro de un corpus de fuentes documentales autorizadas,
 usando NLP, RAG y un flujo agéntico. Cada resultado incluye los fragmentos y
 referencias documentales usados para facilitar su verificación.
