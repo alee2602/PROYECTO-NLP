@@ -18,6 +18,14 @@ Formato por entrada:
 
 ---
 
+## [2026-11-10] Implementación de `search_metadata` (Crossref)
+
+**Contexto**: siguiente tool pendiente del flujo agéntico (anteproyecto sección 11): consultar metadatos bibliográficos sin usarlos como evidencia textual (sección 7).
+**Decisión**: `src/agent/search_metadata.py` consulta la API pública de Crossref por `doi` (búsqueda exacta) o `title`/`author` (búsqueda difusa, `query.bibliographic`). Ante timeout o error de red, devuelve `None` en vez de propagar la excepción — degradación controlada, igual que describe el caso TH05 del anteproyecto ("la evaluación continúa con el corpus local; metadatos marcados como no verificados"). Probado con mocks (6 pruebas, sin red) y una vez contra la API real.
+**Hallazgo al probar con la API real**: una búsqueda por título ("Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks", el paper original de Lewis et al. 2020) devolvió un capítulo de libro distinto con título parecido, no el paper esperado. Esto es comportamiento normal de Crossref (busca por similitud, no coincidencia exacta) — confirma que esta tool debe tratarse como "candidato a verificar", nunca como fuente de verdad automática; quien la use debe contrastar el resultado contra lo esperado antes de confiar en él.
+**Estado**: confirmada.
+**Gaps abiertos**: ninguno para la tool en sí; falta decidir cómo el orquestador agéntico (LangGraph, pendiente) usa este resultado para decidir si una cita es confiable.
+
 ## [2026-11-10] Migración de `venv` a entorno conda dedicado (Smart App Control bloqueaba `torch`)
 
 **Contexto**: al subir `top_k` y correr `scripts/demo.py` con normalidad, `import torch` (dependencia de `sentence-transformers`) empezó a fallar con `OSError: [WinError 4551] Una directiva de Control de aplicaciones bloqueó este archivo` — Windows Smart App Control bloqueó específicamente el `torch.dll` descargado por `pip` en el `venv` del proyecto (mismo tipo de bloqueo que ya había pasado con `jiter` del SDK de `openai`, ver entrada anterior sobre el cliente LLM). La usuaria explícitamente no quiso desactivar Smart App Control ni crear exclusiones de Defender (decisión de seguridad respetada, no negociable).
