@@ -35,7 +35,11 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 
 ## Fase 3 — Mejora Técnica
 
-- [ ] Agregar búsqueda léxica BM25 + ponderación híbrida (70% semántica / 30% léxica)
+- [ ] **Prioridad — hallazgos de `scripts/demo.py` contra datos reales (ver DECISIONS.md)**:
+  - [ ] Agregar búsqueda léxica BM25 + ponderación híbrida (70% semántica / 30% léxica) — hoy la búsqueda solo-semántica no encuentra documentos obviamente relevantes cuando la afirmación usa un término técnico exacto (ej. "BM25", "RAGAS" no trajeron D04/D09 en el top-3)
+  - [ ] Subir `top_k` de 3 a 5 en las pruebas (el anteproyecto ya pedía 5)
+  - [ ] Arreglar que el sistema clasifique como `evidencia_suficiente` una afirmación que la evidencia en realidad **contradice** (caso real: D07 es un paper de detección de prompt injection, y una afirmación de "es imposible detectar" se marcó como `evidencia_suficiente` en vez de rechazarse) — ajustar `SYSTEM_PROMPT` en `src/agent/evaluate_evidence.py` con ejemplos few-shot tipo TC08
+  - [ ] Exigir que `answer` nunca quede vacío, incluso en abstención (hoy pasa `""` cuando `abstained=true`)
 - [ ] Agregar heurística de reranking
 - [ ] Implementar orquestador agéntico (`src/agent/`, LangGraph) con tools:
   - [ ] `extract_claims`

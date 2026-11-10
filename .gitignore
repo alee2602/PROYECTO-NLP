@@ -12,3 +12,6 @@ __pycache__/
 # Corpus: texto completo de papers de terceros, no se redistribuye vía git.
 # documents.json (solo metadata bibliográfica) sí se versiona.
 data/processed/chunks.jsonl
+
+# Logs de corridas manuales (scripts/demo.py, etc.)
+logs/

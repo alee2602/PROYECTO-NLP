@@ -18,6 +18,18 @@ Formato por entrada:
 
 ---
 
+## [2026-11-09] Hallazgos de la demo manual (`scripts/demo.py`): dos gaps de calidad detectados
+
+**Contexto**: antes de avanzar a Fase 3, se corrió `scripts/demo.py` (4 afirmaciones de prueba, no las oficiales del banco) contra el corpus real (D01-D10) y LM Studio real (`qwen2.5-vl-7b-instruct`), para ver el comportamiento de punta a punta con datos reales en vez de solo tests unitarios. Log completo en `logs/demo_output.txt` (no versionado — reproducible corriendo el script).
+**Hallazgo 1 — recuperación semántica pura falla con términos técnicos exactos**: para una afirmación sobre BM25, el top-3 de `SemanticRetriever` NO incluyó D04 ("Legal Information Retrieval using BM25 and BERT"), el documento obviamente más relevante del corpus. Para una afirmación sobre RAGAS, el top-3 NO incluyó D09 ("Ragas: Automated Evaluation of..."), el paper del que trata directamente la afirmación. En ambos casos el sistema se abstuvo (comportamiento seguro, no inventó nada), pero por la razón equivocada: el documento correcto existe en el corpus y no fue encontrado.
+**Hallazgo 2 — el esquema/prompt no distingue "evidencia a favor" de "evidencia en contra"**: para la afirmación "los ataques de inyección de prompt son completamente imposibles de detectar", el sistema recuperó D07 ("UniGuardian: A Unified **Defense** for **Detecting** Prompt Injection...") — evidencia que **contradice** la afirmación (si existen defensas que detectan, no es "imposible"). El modelo respondió `answer: "no"` (señal de que entendió la contradicción) pero igual clasificó `evidence_level: evidencia_suficiente`, cuando según el propio banco de pruebas del anteproyecto (caso TC08: "afirmación que invierte el sentido... no se clasifica como suficiente") debería rechazarse o marcarse de otra forma. El prompt actual (`SYSTEM_PROMPT` en `evaluate_evidence.py`) solo contempla "evidencia respalda" vs. "no hay evidencia", sin una categoría para "evidencia refuta".
+**Decisión**: documentar y priorizar en TODO.md (Fase 3) en vez de arreglar a medias ahora mismo. Propuesta concreta para cuando se ataque:
+  1. Para el Hallazgo 1: implementar la búsqueda híbrida BM25 + semántica (70/30) que ya pedía el anteproyecto desde el inicio — BM25 captura coincidencias léxicas exactas (BM25, RAGAS) que el embedding semántico está subponderando. Subir `top_k` de 3 a 5 (como dice el anteproyecto) también ayuda, pero no resuelve el problema de fondo.
+  2. Para el Hallazgo 2: agregar explícitamente al `SYSTEM_PROMPT` y a `RESPONSE_SCHEMA` una tercera señal — no necesariamente un cuarto `evidence_level`, pero sí instrucciones explícitas de que "evidencia que contradice la afirmación" NO es `evidencia_suficiente` (debe ser `evidencia_no_localizada` o un nuevo estado tipo `contradicha`, a decidir). Añadir casos de prueba tipo TC08 a los ejemplos del prompt (few-shot) para anclar el comportamiento esperado.
+**Alternativas consideradas**: ignorar estos hallazgos y seguir con Fase 3 tal cual — descartado porque el Hallazgo 2 es justo el tipo de falso positivo que la rúbrica de seguridad/fundamentación penaliza fuerte, mejor documentarlo ahora que se encontró.
+**Estado**: hallazgos confirmados con evidencia reproducible; arreglo pendiente (ver TODO.md Fase 3).
+**Gaps abiertos**: ambos — ver TODO.md. Quien retome esto (Bianca u otra persona) puede reproducir corriendo `scripts/demo.py` con LM Studio corriendo.
+
 ## [2026-11-09] Corpus inicial: 10 papers de arXiv (D01-D10)
 
 **Contexto**: faltaba fijar los documentos reales del MVP (D01-D10, referenciados como "por fijar" en el banco de pruebas del anteproyecto).
