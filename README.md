@@ -32,6 +32,7 @@ docs/         Anteproyecto y documentación técnica
 
 | Archivo | Para qué sirve |
 |---|---|
+| `STATUS.md` | Foto del estado actual del proyecto — qué está listo, qué falta de verdad, por dónde retomar. Léelo primero si vuelves al proyecto después de un tiempo. |
 | `TODO.md` | Lista de tareas pendientes, organizada por las 6 fases/ciclos del curso (Anteproyecto, Línea Base, Mejora Técnica, Evaluación, Seguridad, Demostración y Defensa). |
 | `DECISIONS.md` | Log de decisiones de diseño e iteraciones: contexto, qué se decidió, alternativas consideradas, estado y gaps abiertos. Base para las secciones de "limitaciones" y "trabajo futuro" del documento técnico final. |
 | `CLAUDE.md` | Reglas de trabajo para Claude Code en este repo (estilo de commits, qué no se sube a git, contexto del proyecto). |
