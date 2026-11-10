@@ -18,6 +18,17 @@ Formato por entrada:
 
 ---
 
+## [2026-11-10] Migración de `venv` a entorno conda dedicado (Smart App Control bloqueaba `torch`)
+
+**Contexto**: al subir `top_k` y correr `scripts/demo.py` con normalidad, `import torch` (dependencia de `sentence-transformers`) empezó a fallar con `OSError: [WinError 4551] Una directiva de Control de aplicaciones bloqueó este archivo` — Windows Smart App Control bloqueó específicamente el `torch.dll` descargado por `pip` en el `venv` del proyecto (mismo tipo de bloqueo que ya había pasado con `jiter` del SDK de `openai`, ver entrada anterior sobre el cliente LLM). La usuaria explícitamente no quiso desactivar Smart App Control ni crear exclusiones de Defender (decisión de seguridad respetada, no negociable).
+**Investigación**: se confirmó que el `torch` instalado en la base de Anaconda de la misma máquina (`2.11.0+cu128`, instalado hace tiempo vía `conda`) sí carga sin problema — el bloqueo es específico de esa copia de `torch.dll` descargada por `pip` (binario grande, sin firma de un publisher reconocido, con reputación en la nube de Microsoft aún no establecida), no un bloqueo general de `torch` en la máquina. Esto explica por qué la usuaria "nunca había tenido problemas con torch": siempre lo había usado vía Anaconda, nunca instalado fresco con `pip` en un `venv` nuevo.
+**Decisión**: crear un entorno conda dedicado (`evidentia`, separado del `base` de Anaconda para no ensuciarlo) e instalar `torch` ahí vía `conda install pytorch -c pytorch` en vez de `pip install torch`, reutilizando el canal de Anaconda que no dispara el bloqueo. El resto de dependencias (`sentence-transformers`, `faiss-cpu`, `pymupdf`, etc.) se instalan normal vía `pip` dentro de ese entorno — solo `torch` necesitaba venir de conda. Esto evita el problema de raíz sin tocar ninguna configuración de seguridad de Windows y sin depender de LM Studio para los embeddings (se consideró esa alternativa pero se descartó: la usuaria no quería depender 100% de LM Studio para todo).
+**Problemas secundarios encontrados y resueltos en el camino**:
+  - El `pytorch` inicial instalado por conda (2.5.1) era insuficiente para la versión más reciente de `transformers` (pedía `torch >= 2.6`) — se actualizó a `pytorch=2.15.0` (build `cpu_mkl`, canal `pytorch`, encontrado con `conda search`).
+  - Esa actualización de conda removió `pyyaml` como efecto secundario no solicitado — se reinstaló vía `conda install` (no `pip`, porque en ese momento el DNS de la red de la usuaria estaba fallando otra vez para pypi.org, igual que en una sesión anterior).
+**Estado**: confirmada y verificada — las 38 pruebas automáticas pasan en el entorno `evidentia`, incluyendo las que dependen de `sentence-transformers`/FAISS que antes estaban bloqueadas.
+**Gaps abiertos**: el `venv` original (en `PROYECTO-NLP/venv/`) queda obsoleto — ya no es el entorno activo del proyecto, se puede borrar cuando se quiera (no se borró automáticamente). El README ahora documenta conda como el setup oficial, no `venv`.
+
 ## [2026-11-10] Implementación de búsqueda híbrida y arreglo de 3 bugs reales encontrados al re-probar la demo
 
 **Contexto**: al atacar el Hallazgo 1 de la entrada anterior (recuperación semántica pura falla con términos técnicos exactos), se implementó BM25 híbrido y aparecieron 3 problemas nuevos, cada uno diagnosticado con evidencia concreta antes de arreglarse — no se adivinó ninguno.

@@ -39,11 +39,33 @@ docs/         Anteproyecto y documentación técnica
 
 ## Setup
 
-```bash
-python -m venv venv
-venv\Scripts\activate
+**Usamos un entorno conda, no `venv`** (ver `DECISIONS.md`: `torch` instalado vía
+`pip` en un `venv` quedó bloqueado por Smart App Control de Windows; la copia
+de `torch` instalada vía `conda` no tiene ese problema).
+
+```powershell
+conda create -n evidentia python=3.12 -y
+conda install -n evidentia pytorch cpuonly -c pytorch -y
+conda activate evidentia
 pip install -r requirements.txt
 ```
+
+Si en tu máquina `pytorch` desde el canal `pytorch` da un error de versión con
+`transformers` (pide `torch >= 2.6`), instala una build más nueva, por ejemplo:
+
+```powershell
+conda search "pytorch[version='>=2.6']" -c pytorch   # ver qué builds hay para tu Python
+conda install -n evidentia pytorch=2.15.0 -c pytorch -y   # ajustar versión/build según lo que encuentres
+```
+
+Para correr cualquier script del proyecto, usar el Python de este entorno:
+
+```powershell
+C:\Users\<tu-usuario>\anaconda3\envs\evidentia\python.exe scripts\build_corpus.py
+C:\Users\<tu-usuario>\anaconda3\envs\evidentia\python.exe -m pytest tests/
+```
+
+(o `conda activate evidentia` primero y usar `python`/`pytest` directo).
 
 ## Datos: cómo regenerarlos en tu máquina
 
@@ -54,8 +76,9 @@ es `data/processed/documents.json`, que solo tiene metadata bibliográfica.
 
 Si clonas el repo de cero, para tener los datos localmente corre:
 
-```bash
-venv\Scripts\python.exe scripts\build_corpus.py
+```powershell
+conda activate evidentia
+python scripts\build_corpus.py
 ```
 
 Esto descarga los 10 papers de arXiv (D01-D10) a `data/raw/`, los procesa con el
@@ -119,8 +142,9 @@ LLM_MODEL=qwen2.5-vl-7b-instruct
 
 ### 5. Probar que funciona
 
-```bash
-venv\Scripts\python.exe scripts\check_llm.py
+```powershell
+conda activate evidentia
+python scripts\check_llm.py
 ```
 
 Si todo está bien, imprime un `EvidentiaOutput` válido (clasificación, fuentes, etc.)

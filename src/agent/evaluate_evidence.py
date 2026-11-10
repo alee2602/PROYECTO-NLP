@@ -7,35 +7,51 @@ from src.retrieval.index import ScoredChunk
 from src.schemas.output import EvidenceLevel, EvidentiaOutput
 
 from .llm_client import LLMClient, generate_json, get_client
+from .validate_citations import validate_citations
 
 SYSTEM_PROMPT = """Eres el componente evaluate_evidence de Evidentia, un sistema \
 que verifica si afirmaciones de documentos académicos tienen respaldo documental.
 
+Antes de responder, identifica mentalmente qué dice cada fragmento en relación \
+a la afirmación (¿la respalda, la contradice, la respalda solo en parte, o no \
+dice nada relevante?) y usa eso para decidir evidence_level. Nunca clasifiques \
+solo por similitud superficial de palabras.
+
 Reglas estrictas:
 - Usa EXCLUSIVAMENTE el texto de los fragmentos de evidencia que se te dan. \
 Nunca inventes fuentes, páginas ni contenido que no esté en los fragmentos.
-- Si ningún fragmento respalda la afirmación, evidence_level debe ser \
-"evidencia_no_localizada", abstained debe ser true, y sources debe quedar vacío.
-- Si algún fragmento respalda la afirmación pero no completamente, \
-evidence_level debe ser "evidencia_parcial" y needs_human_review debe ser true.
+- Si uno o más fragmentos respaldan la afirmación completamente y sin \
+contradicción, evidence_level="evidencia_suficiente", sources debe citar al \
+menos un chunk_id de los fragmentos recibidos, abstained=false.
+- Si algún fragmento respalda la afirmación solo parcialmente (le falta un \
+dato, cubre solo una parte de una afirmación compuesta, o es ambiguo), \
+evidence_level="evidencia_parcial", needs_human_review=true.
 - Si uno o más fragmentos CONTRADICEN o REFUTAN la afirmación (muestran que es \
-falsa, exagerada o que existe una excepción documentada), evidence_level debe \
-ser "evidencia_parcial" — NUNCA "evidencia_suficiente" — y needs_human_review \
-debe ser true. "evidencia_suficiente" significa que la evidencia RESPALDA la \
-afirmación tal como está escrita, no que la evidencia permita saber que es \
-falsa. En este caso, answer debe explicar explícitamente la contradicción \
-encontrada, citando la fuente que la muestra.
-  Ejemplo: afirmación "la técnica X es imposible de detectar". Si un fragmento \
-describe un método que sí detecta X, la respuesta correcta es evidence_level= \
-"evidencia_parcial", needs_human_review=true, answer="La evidencia contradice \
-la afirmación: el fragmento describe un método que detecta X, por lo que no es \
-imposible de detectar.", citando ese fragmento en sources. NO es \
-"evidencia_suficiente".
-- Si uno o más fragmentos respaldan la afirmación completamente (sin \
-contradicción), evidence_level debe ser "evidencia_suficiente" y sources debe \
-citar al menos un chunk_id de los fragmentos recibidos.
-- El campo answer NUNCA debe quedar vacío. Incluso si abstained=true, explica \
-en una oración por qué no hay evidencia suficiente o localizada.
+falsa, exagerada, o que existe una excepción documentada), evidence_level= \
+"evidencia_parcial" — NUNCA "evidencia_suficiente" — y needs_human_review=true. \
+"evidencia_suficiente" significa que la evidencia RESPALDA la afirmación tal \
+como está escrita, no que la evidencia permita saber que es falsa.
+- Si ningún fragmento es relevante para la afirmación, evidence_level= \
+"evidencia_no_localizada", abstained=true, y sources debe quedar vacío.
+- El campo answer NUNCA debe quedar vacío y debe justificar la clasificación \
+citando lo que dice el fragmento relevante (no solo repetir la afirmación).
+
+Ejemplos (afirmación → fragmento relevante → clasificación correcta):
+1. "El modelo X usa 768 dimensiones" → fragmento dice "el modelo X produce \
+vectores de 768 dimensiones" → evidencia_suficiente, sources=[ese chunk], \
+answer explica que el fragmento confirma la cifra.
+2. "La técnica X es imposible de detectar" → fragmento describe un método que \
+SÍ detecta X → evidencia_parcial (NO suficiente), needs_human_review=true, \
+answer="La evidencia contradice la afirmación: el fragmento describe un \
+método que detecta X.", sources=[ese chunk].
+3. "El sistema Y mejora precisión y reduce costo a la mitad" → fragmento solo \
+confirma la mejora de precisión, no menciona costo → evidencia_parcial, \
+needs_human_review=true, answer explica qué parte sí y qué parte no está \
+respaldada.
+4. "El dataset Z tiene 10,000 ejemplos anotados a mano" → ningún fragmento \
+menciona el tamaño del dataset ni cómo fue anotado → evidencia_no_localizada, \
+abstained=true, sources=[], answer explica que no se encontró esa información.
+
 - Responde ÚNICAMENTE un objeto JSON con las claves: answer, sources (lista de \
 objetos con source, page, chunk_id), abstained, evidence_level, needs_human_review."""
 
@@ -114,7 +130,8 @@ def evaluate_claim(
             raw["claim_id"] = claim_id
             raw["claim"] = claim
             raw["tool_used"] = tool_used if evidence else None
-            return EvidentiaOutput(**raw)
+            result = EvidentiaOutput(**raw)
+            return validate_citations(result, evidence)
         except (ValidationError, json.JSONDecodeError, KeyError, TypeError, requests.RequestException):
             continue
 

@@ -44,14 +44,17 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 - [x] **Falso positivo de contradicción — mejorado, no 100% perfecto**: se agregó regla explícita + ejemplo few-shot en `SYSTEM_PROMPT` (`src/agent/evaluate_evidence.py`) para que evidencia que contradice la afirmación no se clasifique como `evidencia_suficiente`. Resultado real: el caso de prueba (afirmación "imposible detectar" vs. paper de detección) ya no da falso positivo — ahora sale `evidencia_no_localizada` (abstención). Lo ideal sería `evidencia_parcial` explicando la contradicción explícitamente, que el modelo (7B local) no siempre logra, pero el riesgo principal (afirmar respaldo falso) ya no ocurre. Revisar con un modelo más grande o con más casos del banco de pruebas real en Fase 4.
 - [x] `answer` nunca queda vacío: agregado `minLength: 1` en `RESPONSE_SCHEMA`, no solo instrucción de prompt
 - [ ] (Informativo, no requiere acción) a veces LM Studio/llama.cpp crashea generando JSON con grammar ("Unexpected empty grammar stack...") — es un bug conocido del motor, no nuestro; el sistema ya se abstiene con `needs_human_review=True` tras el reintento, que es el comportamiento correcto por diseño (anteproyecto sección 11)
-- [ ] Agregar heurística de reranking
+- [x] **Probado con afirmaciones nuevas (`scripts/demo_fresh.py`, documentos D02/D05/D06/D10 no usados antes) para medir generalización real, no solo el caso ya calibrado** — encontró un bug nuevo: el LLM validaba una cifra inventada ("45% de mejora") como `evidencia_suficiente` citando un chunk que ni la menciona
+- [x] **`validate_citations` implementado como código determinístico** (`src/agent/validate_citations.py`), no delegado al LLM: (1) rechaza citas a chunks que no fueron recuperados, (2) si la afirmación tiene una cifra específica, verifica que aparezca literalmente en el texto citado, si no degrada `evidencia_suficiente` → `evidencia_parcial` + `needs_human_review=true`. 5 pruebas deterministas en `tests/test_validate_citations.py`, no dependen de un LLM real.
+- [x] **Migrado de `venv` a entorno conda** (`conda activate evidentia`) — Smart App Control bloqueaba el `torch` instalado por pip; el de Anaconda no tiene ese problema (ver DECISIONS.md). Setup actualizado en README.
+- [x] Heurística de reranking: ya satisfecha por la combinación de puntajes semántico+léxico en `HybridRetriever` (es literalmente lo que pide el anteproyecto sección 10 como "heurística inicial"); un modelo de reranking dedicado queda como mejora futura opcional
 - [ ] Implementar orquestador agéntico (`src/agent/`, LangGraph) con tools:
   - [ ] `extract_claims`
   - [ ] `search_evidence`
   - [ ] `search_metadata`
-  - [ ] `evaluate_evidence`
-  - [ ] `validate_citations`
-- [ ] Definir y validar esquema de salida con Pydantic (`src/schemas/`)
+  - [x] `evaluate_evidence` (ya implementado como función independiente; falta integrarlo al grafo de LangGraph)
+  - [x] `validate_citations` (ya implementado y conectado dentro de `evaluate_claim`; falta exponerlo como tool independiente del agente si el diseño de LangGraph lo requiere)
+- [ ] Definir y validar esquema de salida con Pydantic (`src/schemas/`) — ya existe `EvidentiaOutput`, falta confirmar que encaja sin cambios dentro del flujo de LangGraph
 
 ## Fase 4 — Evaluación
 
