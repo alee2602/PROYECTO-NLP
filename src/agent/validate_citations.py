@@ -7,9 +7,18 @@ from src.schemas.output import EvidenceLevel, EvidentiaOutput
 # fundamentación numérica.
 _NUMBER_RE = re.compile(r"\d+(?:[.,]\d+)?%?")
 
+# Los identificadores arXiv ("arXiv:2502.13141", opcionalmente con "v2") son
+# una ETIQUETA para referirse al paper, no un dato factual a verificar — el
+# chunker a menudo separa el header/abstract (donde está el ID) del cuerpo
+# del texto que respalda la afirmación real, así que exigir que el número
+# del ID aparezca en el chunk citado genera falsos negativos (ver
+# DECISIONS.md: afectaba 4 de 7 casos de clasificación incorrecta).
+_ARXIV_ID_RE = re.compile(r"arxiv:\s*\d{4}\.\d{4,5}(?:v\d+)?", re.IGNORECASE)
+
 
 def _extract_numbers(text: str) -> set[str]:
-    return set(_NUMBER_RE.findall(text))
+    text_without_arxiv_ids = _ARXIV_ID_RE.sub("", text)
+    return set(_NUMBER_RE.findall(text_without_arxiv_ids))
 
 
 def _with_updates(output: EvidentiaOutput, **updates) -> EvidentiaOutput:

@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pymupdf  # noqa: E402
 
-from src.ingestion.arxiv_source import download_pdf, search_arxiv  # noqa: E402
+from src.ingestion.arxiv_source import download_pdf, extract_version, search_arxiv  # noqa: E402
 from src.ingestion.pdf_loader import PDFValidationError  # noqa: E402
 from src.ingestion.pipeline import ingest_document  # noqa: E402
 
@@ -78,7 +78,7 @@ def main():
                     authors=paper.authors,
                     doi=None,
                     publication_year=publication_year,
-                    version="1",
+                    version=extract_version(paper.arxiv_id),
                     license=ARXIV_LICENSE,
                 )
             except (PDFValidationError, Exception) as exc:  # noqa: BLE001

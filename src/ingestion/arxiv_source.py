@@ -1,3 +1,4 @@
+import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
@@ -73,6 +74,15 @@ def search_arxiv(query: str, max_results: int = 5) -> list[ArxivPaper]:
             )
         )
     return papers
+
+
+def extract_version(arxiv_id: str) -> str:
+    """arXiv incluye el número de versión en el propio id (ej. "2309.15217v2"
+    -- ver DECISIONS.md: antes se hardcodeaba version="1" al ingerir,
+    ignorando este sufijo, lo que dejaba el metadato de versión desalineado
+    con la versión real citada en source/texto para 9 de 20 documentos."""
+    match = re.search(r"v(\d+)$", arxiv_id)
+    return match.group(1) if match else "1"
 
 
 def download_pdf(url: str, destination: Path) -> None:

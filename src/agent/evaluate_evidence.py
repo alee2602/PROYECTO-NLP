@@ -25,8 +25,14 @@ Nunca inventes fuentes, páginas ni contenido que no esté en los fragmentos.
 contradicción, evidence_level="evidencia_suficiente", sources debe citar al \
 menos un chunk_id de los fragmentos recibidos, abstained=false.
 - Si algún fragmento respalda la afirmación solo parcialmente (le falta un \
-dato, cubre solo una parte de una afirmación compuesta, o es ambiguo), \
-evidence_level="evidencia_parcial", needs_human_review=true.
+dato, o es ambiguo), evidence_level="evidencia_parcial", needs_human_review=true.
+- Si la afirmación combina VARIOS hechos (afirmación compuesta), cada hecho \
+puede estar respaldado por un fragmento DISTINTO, incluso de documentos \
+diferentes — no esperes que un solo fragmento confirme toda la afirmación. \
+Si cada hecho individual tiene su propio fragmento que lo respalda (sumando \
+todos los fragmentos recibidos), es evidencia_suficiente citando todos los \
+fragmentos relevantes. Solo es evidencia_parcial si falta respaldo para \
+alguno de los hechos en TODOS los fragmentos recibidos.
 - Si uno o más fragmentos CONTRADICEN o REFUTAN la afirmación (muestran que es \
 falsa, exagerada, o que existe una excepción documentada), evidence_level= \
 "evidencia_parcial" — NUNCA "evidencia_suficiente" — y needs_human_review=true. \
@@ -52,6 +58,12 @@ respaldada.
 4. "El dataset Z tiene 10,000 ejemplos anotados a mano" → ningún fragmento \
 menciona el tamaño del dataset ni cómo fue anotado → evidencia_no_localizada, \
 abstained=true, sources=[], answer explica que no se encontró esa información.
+5. "El sistema A hace P, y el framework B hace Q" (afirmación compuesta) → un \
+fragmento del documento de A confirma P, y un fragmento DISTINTO del \
+documento de B confirma Q (ninguno de los dos fragmentos menciona ambas cosas \
+a la vez) → evidencia_suficiente, sources=[ambos fragmentos], porque cada \
+parte de la afirmación sí tiene su propio respaldo — NO es necesario que un \
+solo fragmento confirme las dos partes juntas.
 
 - Responde ÚNICAMENTE un objeto JSON con las claves: answer, sources (lista de \
 objetos con source, page, chunk_id), abstained, evidence_level, needs_human_review."""
@@ -83,10 +95,23 @@ RESPONSE_SCHEMA = {
 }
 
 
+def _format_chunk_header(chunk) -> str:  # noqa: ANN001 - ChunkMetadata
+    parts = [f"chunk_id={chunk.chunk_id}", f"source={chunk.source}", f"page={chunk.page}"]
+    # Metadata propia del sistema (no de Crossref/OpenAlex — ver gobernanza
+    # de datos en el anteproyecto), útil para afirmaciones sobre fecha/
+    # versión que el texto del chunk por sí solo no deja claras (TC19).
+    if chunk.publication_year:
+        parts.append(f"publication_year={chunk.publication_year}")
+    if chunk.version:
+        parts.append(f"version={chunk.version}")
+    if chunk.doi:
+        parts.append(f"doi={chunk.doi}")
+    return "[" + " ".join(parts) + "]"
+
+
 def _build_user_prompt(claim: str, evidence: list[ScoredChunk]) -> str:
     fragments = "\n\n".join(
-        f"[chunk_id={sc.chunk.chunk_id} source={sc.chunk.source} page={sc.chunk.page}]\n{sc.chunk.text}"
-        for sc in evidence
+        f"{_format_chunk_header(sc.chunk)}\n{sc.chunk.text}" for sc in evidence
     )
     return (
         f"Afirmación a evaluar:\n{claim}\n\n"

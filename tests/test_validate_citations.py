@@ -63,6 +63,33 @@ def test_keeps_suficiente_when_claim_number_is_in_cited_text():
     assert result.needs_human_review is False
 
 
+def test_ignores_arxiv_identifier_numbers_used_only_as_a_reference():
+    """Regression test: TC09/TH01/TH02/TH05 bajaban a evidencia_parcial
+    porque "2502.13141" (parte de "arXiv:2502.13141") no aparecía en el
+    chunk citado -- el identificador es una referencia al paper, no un
+    dato factual que el chunk deba repetir. Ver DECISIONS.md."""
+    output = _base_output(
+        claim="El artículo (arXiv:2502.13141) fue escrito por Huawei Lin y colegas."
+    )
+    evidence = _make_evidence("D01_0000", "Huawei Lin es uno de los autores de este trabajo.")
+
+    result = validate_citations(output, evidence)
+
+    assert result.evidence_level == EvidenceLevel.SUFICIENTE
+    assert result.needs_human_review is False
+
+
+def test_still_catches_real_numeric_claims_alongside_an_arxiv_id():
+    output = _base_output(
+        claim="El artículo (arXiv:2502.13141) reporta una mejora del 99%."
+    )
+    evidence = _make_evidence("D01_0000", "Huawei Lin es uno de los autores de este trabajo.")
+
+    result = validate_citations(output, evidence)
+
+    assert result.evidence_level == EvidenceLevel.PARCIAL
+
+
 def test_does_not_touch_non_suficiente_outputs_even_with_missing_numbers():
     output = _base_output(
         claim="El sistema mejora el rendimiento en un 45%.",
