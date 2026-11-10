@@ -162,5 +162,160 @@
     "version": "1",
     "license": "arXiv.org perpetual, non-exclusive license",
     "ingestion_date": "2026-11-09"
+  },
+  {
+    "document_id": "D11",
+    "title": "An Exploration of Data Augmentation and Sampling Techniques for Domain-Agnostic Question Answering",
+    "authors": [
+      "Shayne Longpre",
+      "Yi Lu",
+      "Zhucheng Tu",
+      "Chris DuBois"
+    ],
+    "source": "arXiv:1912.02145v1",
+    "doi": null,
+    "publication_year": 2019,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-10"
+  },
+  {
+    "document_id": "D12",
+    "title": "Learn to Accumulate Evidence from All Training Samples: Theory and Practice",
+    "authors": [
+      "Deep Pandey",
+      "Qi Yu"
+    ],
+    "source": "arXiv:2306.11113v2",
+    "doi": null,
+    "publication_year": 2023,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-10"
+  },
+  {
+    "document_id": "D13",
+    "title": "Hallucination Detection with Small Language Models",
+    "authors": [
+      "Ming Cheung"
+    ],
+    "source": "arXiv:2506.22486v1",
+    "doi": null,
+    "publication_year": 2025,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-10"
+  },
+  {
+    "document_id": "D14",
+    "title": "BlueSuffix: Reinforced Blue Teaming for Vision-Language Models Against Jailbreak Attacks",
+    "authors": [
+      "Yunhan Zhao",
+      "Xiang Zheng",
+      "Lin Luo",
+      "Yige Li",
+      "Xingjun Ma",
+      "Yu-Gang Jiang"
+    ],
+    "source": "arXiv:2410.20971v2",
+    "doi": null,
+    "publication_year": 2024,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-10"
+  },
+  {
+    "document_id": "D15",
+    "title": "Acute Lymphoblastic Leukemia Detection Using Hypercomplex-Valued Convolutional Neural Networks",
+    "authors": [
+      "Guilherme Vieira",
+      "Marcos Eduardo Valle"
+    ],
+    "source": "arXiv:2205.13273v1",
+    "doi": null,
+    "publication_year": 2022,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-10"
+  },
+  {
+    "document_id": "D16",
+    "title": "AI Agent-Driven Framework for Automated Product Knowledge Graph Construction in E-Commerce",
+    "authors": [
+      "Dimitar Peshevski",
+      "Riste Stojanov",
+      "Dimitar Trajanov"
+    ],
+    "source": "arXiv:2511.11017v1",
+    "doi": null,
+    "publication_year": 2025,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-10"
+  },
+  {
+    "document_id": "D17",
+    "title": "On the Similarities of Embeddings in Contrastive Learning",
+    "authors": [
+      "Chungpa Lee",
+      "Sehee Lim",
+      "Kibok Lee",
+      "Jy-yong Sohn"
+    ],
+    "source": "arXiv:2506.09781v2",
+    "doi": null,
+    "publication_year": 2025,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-10"
+  },
+  {
+    "document_id": "D18",
+    "title": "Collaborative Competitive filtering II: Optimal Recommendation and Collaborative Games",
+    "authors": [
+      "Shuang-Hong Yang"
+    ],
+    "source": "arXiv:1212.2150v1",
+    "doi": null,
+    "publication_year": 2012,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-10"
+  },
+  {
+    "document_id": "D19",
+    "title": "Reinforcement Learning Based Speech Enhancement for Robust Speech Recognition",
+    "authors": [
+      "Yih-Liang Shen",
+      "Chao-Yuan Huang",
+      "Syu-Siang Wang",
+      "Yu Tsao",
+      "Hsin-Min Wang",
+      "Tai-Shih Chi"
+    ],
+    "source": "arXiv:1811.04224v1",
+    "doi": null,
+    "publication_year": 2018,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-10"
+  },
+  {
+    "document_id": "D20",
+    "title": "The Deep Arbitrary Polynomial Chaos Neural Network or how Deep Artificial Neural Networks could benefit from Data-Driven Homogeneous Chaos Theory",
+    "authors": [
+      "Sergey Oladyshkin",
+      "Timothy Praditia",
+      "Ilja Kröker",
+      "Farid Mohammadi",
+      "Wolfgang Nowak",
+      "Sebastian Otte"
+    ],
+    "source": "arXiv:2306.14753v1",
+    "doi": null,
+    "publication_year": 2023,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-10"
   }
 ]

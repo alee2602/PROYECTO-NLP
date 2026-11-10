@@ -63,7 +63,11 @@ class HybridRetriever:
         self._chunks.extend(chunks)
 
     def search(
-        self, query: str, top_k: int = 5, candidate_pool: int = 20
+        self,
+        query: str,
+        top_k: int = 5,
+        candidate_pool: int = 20,
+        use_identifier_boost: bool = True,
     ) -> list[ScoredChunk]:
         n_chunks = len(self.lexical)
         if n_chunks == 0:
@@ -89,7 +93,7 @@ class HybridRetriever:
                 combined.get(hit.chunk.chunk_id, 0.0) + self.lexical_weight * lexical_norm[i]
             )
 
-        identifiers = _extract_identifiers(query)
+        identifiers = _extract_identifiers(query) if use_identifier_boost else set()
         if identifiers:
             for chunk in self._chunks:
                 text_lower = chunk.text.lower()
