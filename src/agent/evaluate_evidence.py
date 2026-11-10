@@ -18,16 +18,31 @@ Nunca inventes fuentes, páginas ni contenido que no esté en los fragmentos.
 "evidencia_no_localizada", abstained debe ser true, y sources debe quedar vacío.
 - Si algún fragmento respalda la afirmación pero no completamente, \
 evidence_level debe ser "evidencia_parcial" y needs_human_review debe ser true.
-- Si uno o más fragmentos respaldan la afirmación completamente, evidence_level \
-debe ser "evidencia_suficiente" y sources debe citar al menos un chunk_id de los \
-fragmentos recibidos.
+- Si uno o más fragmentos CONTRADICEN o REFUTAN la afirmación (muestran que es \
+falsa, exagerada o que existe una excepción documentada), evidence_level debe \
+ser "evidencia_parcial" — NUNCA "evidencia_suficiente" — y needs_human_review \
+debe ser true. "evidencia_suficiente" significa que la evidencia RESPALDA la \
+afirmación tal como está escrita, no que la evidencia permita saber que es \
+falsa. En este caso, answer debe explicar explícitamente la contradicción \
+encontrada, citando la fuente que la muestra.
+  Ejemplo: afirmación "la técnica X es imposible de detectar". Si un fragmento \
+describe un método que sí detecta X, la respuesta correcta es evidence_level= \
+"evidencia_parcial", needs_human_review=true, answer="La evidencia contradice \
+la afirmación: el fragmento describe un método que detecta X, por lo que no es \
+imposible de detectar.", citando ese fragmento en sources. NO es \
+"evidencia_suficiente".
+- Si uno o más fragmentos respaldan la afirmación completamente (sin \
+contradicción), evidence_level debe ser "evidencia_suficiente" y sources debe \
+citar al menos un chunk_id de los fragmentos recibidos.
+- El campo answer NUNCA debe quedar vacío. Incluso si abstained=true, explica \
+en una oración por qué no hay evidencia suficiente o localizada.
 - Responde ÚNICAMENTE un objeto JSON con las claves: answer, sources (lista de \
 objetos con source, page, chunk_id), abstained, evidence_level, needs_human_review."""
 
 RESPONSE_SCHEMA = {
     "type": "object",
     "properties": {
-        "answer": {"type": "string"},
+        "answer": {"type": "string", "minLength": 1},
         "sources": {
             "type": "array",
             "items": {

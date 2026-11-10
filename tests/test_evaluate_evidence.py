@@ -1,9 +1,16 @@
 import json
 
-from src.agent.evaluate_evidence import evaluate_claim
+from src.agent.evaluate_evidence import RESPONSE_SCHEMA, evaluate_claim
 from src.retrieval.index import ScoredChunk
 from src.schemas.chunk import ChunkMetadata
 from src.schemas.output import EvidenceLevel
+
+
+def test_response_schema_requires_non_empty_answer():
+    """Regression test: el LLM a veces devolvía answer="" incluso al
+    abstenerse (ver DECISIONS.md). El esquema ahora lo prohíbe a nivel de
+    grammar, no solo por instrucción en el prompt."""
+    assert RESPONSE_SCHEMA["properties"]["answer"].get("minLength") == 1
 
 
 class FakeClient:

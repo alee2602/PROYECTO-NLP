@@ -41,9 +41,8 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
   - [x] Subido `top_k` de 3 a 5 en la demo (como pedía el anteproyecto)
   - [x] Normalización de ligaduras tipográficas (ﬁ, ﬂ, etc.) en `src/ingestion/cleaner.py` — artefacto común de PDFs académicos
   - [x] Diagnosticado y resuelto el error "context length exceeded" (el modelo en LM Studio estaba cargado con 4096 tokens de contexto; con 5 chunks no alcanzaba — hay que cargarlo con `lms load <modelo> --context-length 16384` o más, ver README)
-- [ ] **Pendiente — hallazgo de `scripts/demo.py` sin resolver todavía**:
-  - [ ] El sistema puede clasificar como `evidencia_suficiente` una afirmación que la evidencia en realidad **contradice** (caso real: D07 es un paper de detección de prompt injection, y una afirmación de "es imposible detectar" se marcó como `evidencia_suficiente` en vez de rechazarse) — ajustar `SYSTEM_PROMPT` en `src/agent/evaluate_evidence.py` con ejemplos few-shot tipo TC08
-  - [ ] Exigir que `answer` nunca quede vacío, incluso en abstención (hoy a veces pasa `""` cuando `abstained=true`)
+- [x] **Falso positivo de contradicción — mejorado, no 100% perfecto**: se agregó regla explícita + ejemplo few-shot en `SYSTEM_PROMPT` (`src/agent/evaluate_evidence.py`) para que evidencia que contradice la afirmación no se clasifique como `evidencia_suficiente`. Resultado real: el caso de prueba (afirmación "imposible detectar" vs. paper de detección) ya no da falso positivo — ahora sale `evidencia_no_localizada` (abstención). Lo ideal sería `evidencia_parcial` explicando la contradicción explícitamente, que el modelo (7B local) no siempre logra, pero el riesgo principal (afirmar respaldo falso) ya no ocurre. Revisar con un modelo más grande o con más casos del banco de pruebas real en Fase 4.
+- [x] `answer` nunca queda vacío: agregado `minLength: 1` en `RESPONSE_SCHEMA`, no solo instrucción de prompt
 - [ ] (Informativo, no requiere acción) a veces LM Studio/llama.cpp crashea generando JSON con grammar ("Unexpected empty grammar stack...") — es un bug conocido del motor, no nuestro; el sistema ya se abstiene con `needs_human_review=True` tras el reintento, que es el comportamiento correcto por diseño (anteproyecto sección 11)
 - [ ] Agregar heurística de reranking
 - [ ] Implementar orquestador agéntico (`src/agent/`, LangGraph) con tools:
