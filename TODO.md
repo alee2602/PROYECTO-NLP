@@ -22,12 +22,13 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
   - [ ] Elegir documentos propios del equipo con autorización
   - [ ] Descargar y guardar en `data/raw/`
 - [ ] Conseguir acceso al modelo generativo (API key de Claude/OpenAI/Gemini, o setup local con Ollama)
-- [ ] Implementar pipeline de ingesta (`src/ingestion/`)
-  - [ ] Carga y validación de PDF
-  - [ ] Extracción de texto por página (PyMuPDF)
-  - [ ] Limpieza/normalización de texto
-  - [ ] Chunking (~450 tokens, solapamiento 80, respetando párrafos/secciones)
-  - [ ] Asignación de metadatos por chunk (`chunk_id`, `document_id`, `page`, `section`, `source`, `version`, `doi`, `publication_year`)
+- [x] Implementar pipeline de ingesta (`src/ingestion/`)
+  - [x] Carga y validación de PDF (`pdf_loader.py`: tipo, tamaño, páginas, cifrado)
+  - [x] Extracción de texto por página (`extractor.py`, PyMuPDF)
+  - [x] Limpieza de texto y remoción de encabezados/pies repetidos (`cleaner.py`)
+  - [x] Chunking (`chunker.py`): ventana deslizante de ~450 palabras, solapamiento 80 (aproximación por palabra, no tokenizer real — ver nota en el código)
+  - [x] Metadatos por documento y por chunk con Pydantic (`src/schemas/document.py`, `src/schemas/chunk.py`), orquestado en `pipeline.py`
+  - [x] Pruebas unitarias (`tests/test_ingestion.py`, 10 casos, todos pasando)
 - [ ] Generar embeddings (`src/retrieval/`) con `paraphrase-multilingual-MiniLM-L12-v2`
 - [ ] Construir índice vectorial (FAISS)
 - [ ] Recuperación semántica básica (sin híbrido todavía)
