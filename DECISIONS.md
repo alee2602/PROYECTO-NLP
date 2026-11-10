@@ -18,6 +18,22 @@ Formato por entrada:
 
 ---
 
+## [2026-11-09] Corpus inicial: 10 papers de arXiv (D01-D10)
+
+**Contexto**: faltaba fijar los documentos reales del MVP (D01-D10, referenciados como "por fijar" en el banco de pruebas del anteproyecto).
+**Decisión**: `src/ingestion/arxiv_source.py` consulta la API pública de arXiv (sin API key) y `scripts/build_corpus.py` descarga 2 papers por cada uno de 5 temas ligados al propio dominio técnico del proyecto (RAG, BM25, FAISS/similitud, prompt injection, evaluación de RAG), filtra duplicados entre queries y descarta documentos de más de 40 páginas (para no sesgar el corpus con una tesis/survey larga — pasó con un documento de 133 páginas en el primer intento). Resultado: 10 documentos, 222 chunks, probado end-to-end con `SemanticRetriever` contra el corpus real (consulta sobre "BM25 para recuperación legal" recuperó correctamente D04, el paper de BM25+BERT para COLIEE). Lista de documentos y sus `arXiv:id` en `data/processed/documents.json`.
+**Alternativas consideradas**: usar también documentos propios del equipo (mencionados en el anteproyecto) — se deja como opcional, el corpus de arXiv ya cumple el mínimo de 5-10 documentos exigido.
+**Estado**: confirmada para el MVP.
+**Gaps abiertos**: hay que actualizar la tabla del banco de pruebas en el anteproyecto (sección 12) reemplazando "p. por fijar" con páginas reales de estos 10 documentos, una vez que se redacten las 25 afirmaciones de prueba contra el contenido real.
+
+## [2026-11-09] Gobernanza de datos: texto completo del corpus no se versiona en git
+
+**Contexto**: al generar `data/processed/chunks.jsonl` nos dimos cuenta de que contiene el texto completo extraído de los 10 papers, no solo metadata — a diferencia de los PDFs originales (ya excluidos), este archivo sí se iba a subir a git por defecto.
+**Decisión**: se agregó `data/processed/chunks.jsonl` al `.gitignore`. Se mantiene `documents.json` versionado porque solo contiene metadata bibliográfica (título, autores, año, licencia), que no es el contenido protegido del paper.
+**Alternativas consideradas**: versionar igual el texto completo, apoyándose en que arXiv permite su distribución — se descartó por ser más conservador: el proyecto no necesita redistribuir el texto vía GitHub para funcionar, solo necesita poder regenerarlo localmente con `scripts/build_corpus.py`.
+**Estado**: confirmada.
+**Gaps abiertos**: ninguno — `chunks.jsonl` se puede regenerar en cualquier momento corriendo el script, no se pierde nada al no versionarlo.
+
 ## [2026-11-09] Modelo generativo: cliente compatible con OpenAI (LM Studio por defecto)
 
 **Contexto**: el anteproyecto no fijaba un proveedor de LLM concreto; había que decidir cómo generar la clasificación fundamentada (`evaluate_evidence`).

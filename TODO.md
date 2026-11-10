@@ -17,10 +17,8 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 
 ## Fase 2 — Línea Base
 
-- [ ] Armar corpus inicial
-  - [ ] Elegir 5-10 documentos open access relacionados (vía OpenAlex/Crossref/arXiv)
-  - [ ] Elegir documentos propios del equipo con autorización
-  - [ ] Descargar y guardar en `data/raw/`
+- [x] Armar corpus inicial: 10 papers de arXiv (D01-D10) vía `scripts/build_corpus.py`, descargados a `data/raw/` (no versionados) y procesados a `data/processed/documents.json` (metadata, sí versionado) y `chunks.jsonl` (texto completo, no versionado — ver DECISIONS.md)
+- [ ] Elegir documentos propios del equipo con autorización (opcional, el corpus de arXiv ya cumple el mínimo de 5-10)
 - [ ] Conseguir acceso al modelo generativo (API key de Claude/OpenAI/Gemini, o setup local con Ollama)
 - [x] Implementar pipeline de ingesta (`src/ingestion/`)
   - [x] Carga y validación de PDF (`pdf_loader.py`: tipo, tamaño, páginas, cifrado)

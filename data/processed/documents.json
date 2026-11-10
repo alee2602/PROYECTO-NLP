@@ -1,0 +1,166 @@
+[
+  {
+    "document_id": "D01",
+    "title": "AR-RAG: Autoregressive Retrieval Augmentation for Image Generation",
+    "authors": [
+      "Jingyuan Qi",
+      "Zhiyang Xu",
+      "Qifan Wang",
+      "Lifu Huang"
+    ],
+    "source": "arXiv:2506.06962v3",
+    "doi": null,
+    "publication_year": 2025,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-09"
+  },
+  {
+    "document_id": "D02",
+    "title": "Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation",
+    "authors": [
+      "Nurshat Fateh Ali",
+      "Md. Mahdi Mohtasim",
+      "Shakil Mosharrof",
+      "T. Gopi Krishna"
+    ],
+    "source": "arXiv:2411.18583v1",
+    "doi": null,
+    "publication_year": 2024,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-09"
+  },
+  {
+    "document_id": "D03",
+    "title": "Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval",
+    "authors": [
+      "Kidist Amde Mekonnen",
+      "Yubao Tang",
+      "Maarten de Rijke"
+    ],
+    "source": "arXiv:2504.05181v2",
+    "doi": null,
+    "publication_year": 2025,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-09"
+  },
+  {
+    "document_id": "D04",
+    "title": "IITP@COLIEE 2019: Legal Information Retrieval using BM25 and BERT",
+    "authors": [
+      "Baban Gain",
+      "Dibyanayan Bandyopadhyay",
+      "Tanik Saikh",
+      "Asif Ekbal"
+    ],
+    "source": "arXiv:2104.08653v4",
+    "doi": null,
+    "publication_year": 2021,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-09"
+  },
+  {
+    "document_id": "D05",
+    "title": "SIR: Similar Image Retrieval for Product Search in E-Commerce",
+    "authors": [
+      "Theban Stanley",
+      "Nihar Vanjara",
+      "Yanxin Pan",
+      "Ekaterina Pirogova",
+      "Swagata Chakraborty",
+      "Abon Chaudhuri"
+    ],
+    "source": "arXiv:2009.13836v1",
+    "doi": null,
+    "publication_year": 2020,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-09"
+  },
+  {
+    "document_id": "D06",
+    "title": "Set Similarity Search Beyond MinHash",
+    "authors": [
+      "Tobias Christiani",
+      "Rasmus Pagh"
+    ],
+    "source": "arXiv:1612.07710v2",
+    "doi": null,
+    "publication_year": 2016,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-09"
+  },
+  {
+    "document_id": "D07",
+    "title": "UniGuardian: A Unified Defense for Detecting Prompt Injection, Backdoor Attacks and Adversarial Attacks in Large Language Models",
+    "authors": [
+      "Huawei Lin",
+      "Yingjie Lao",
+      "Tony Geng",
+      "Tan Yu",
+      "Weijie Zhao"
+    ],
+    "source": "arXiv:2502.13141v2",
+    "doi": null,
+    "publication_year": 2025,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-09"
+  },
+  {
+    "document_id": "D08",
+    "title": "Automatic and Universal Prompt Injection Attacks against Large Language Models",
+    "authors": [
+      "Xiaogeng Liu",
+      "Zhiyuan Yu",
+      "Yizhe Zhang",
+      "Ning Zhang",
+      "Chaowei Xiao"
+    ],
+    "source": "arXiv:2403.04957v1",
+    "doi": null,
+    "publication_year": 2024,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-09"
+  },
+  {
+    "document_id": "D09",
+    "title": "Ragas: Automated Evaluation of Retrieval Augmented Generation",
+    "authors": [
+      "Shahul Es",
+      "Jithin James",
+      "Luis Espinosa-Anke",
+      "Steven Schockaert"
+    ],
+    "source": "arXiv:2309.15217v2",
+    "doi": null,
+    "publication_year": 2023,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-09"
+  },
+  {
+    "document_id": "D10",
+    "title": "Intelligent Interaction Strategies for Context-Aware Cognitive Augmentation",
+    "authors": [
+      " Xiangrong",
+      " Zhu",
+      "Yuan Xu",
+      "Tianjian Liu",
+      "Jingwei Sun",
+      "Yu Zhang",
+      "Xin Tong"
+    ],
+    "source": "arXiv:2504.13684v1",
+    "doi": null,
+    "publication_year": 2025,
+    "version": "1",
+    "license": "arXiv.org perpetual, non-exclusive license",
+    "ingestion_date": "2026-11-09"
+  }
+]

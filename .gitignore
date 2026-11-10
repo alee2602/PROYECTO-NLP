@@ -8,3 +8,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .env
+
+# Corpus: texto completo de papers de terceros, no se redistribuye vía git.
+# documents.json (solo metadata bibliográfica) sí se versiona.
+data/processed/chunks.jsonl
