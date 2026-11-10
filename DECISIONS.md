@@ -18,6 +18,14 @@ Formato por entrada:
 
 ---
 
+## [2026-11-09] Implementación de embeddings + índice vectorial (Fase 2)
+
+**Contexto**: siguiente paso tras el pipeline de ingesta — convertir chunks en vectores y poder recuperarlos por similitud.
+**Decisión**: `src/retrieval/embeddings.py` carga `paraphrase-multilingual-MiniLM-L12-v2` de forma perezosa (solo al primer uso) y devuelve embeddings normalizados L2. `src/retrieval/index.py` usa `faiss.IndexFlatIP` (producto interno sobre vectores normalizados = similitud coseno) en vez de un índice aproximado, razonable para un corpus pequeño (5-10 documentos del MVP). `src/retrieval/retriever.py` junta ambos en `SemanticRetriever`, la recuperación semántica pura de la línea base (sin BM25/híbrido todavía). Probado end-to-end con el modelo real: dada una pregunta sobre "librería para indexar vectores", recuperó correctamente el chunk sobre FAISS por encima de uno sobre BM25 y uno irrelevante (receta de cocina).
+**Alternativas consideradas**: un índice FAISS aproximado (IVF/HNSW) — innecesario al tamaño del corpus del MVP (5-10 documentos), se puede migrar en Fase 3 si el corpus crece.
+**Estado**: confirmada para el MVP.
+**Gaps abiertos**: no hay persistencia en disco del índice todavía (se reconstruye en memoria cada vez) — evaluar si hace falta antes de la demo en Fase 6.
+
 ## [2026-11-09] Implementación del pipeline de ingesta (Fase 2)
 
 **Contexto**: había que implementar carga, extracción, limpieza, chunking y metadatos descritos en el anteproyecto (secciones 9-10).

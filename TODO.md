@@ -29,10 +29,10 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
   - [x] Chunking (`chunker.py`): ventana deslizante de ~450 palabras, solapamiento 80 (aproximación por palabra, no tokenizer real — ver nota en el código)
   - [x] Metadatos por documento y por chunk con Pydantic (`src/schemas/document.py`, `src/schemas/chunk.py`), orquestado en `pipeline.py`
   - [x] Pruebas unitarias (`tests/test_ingestion.py`, 10 casos, todos pasando)
-- [ ] Generar embeddings (`src/retrieval/`) con `paraphrase-multilingual-MiniLM-L12-v2`
-- [ ] Construir índice vectorial (FAISS)
-- [ ] Recuperación semántica básica (sin híbrido todavía)
-- [ ] Clasificación mínima de afirmaciones (suficiente/parcial/no localizada), sin flujo agéntico completo
+- [x] Generar embeddings (`src/retrieval/embeddings.py`) con `paraphrase-multilingual-MiniLM-L12-v2`
+- [x] Construir índice vectorial (`src/retrieval/index.py`, FAISS `IndexFlatIP`)
+- [x] Recuperación semántica básica (`src/retrieval/retriever.py`, `SemanticRetriever`, sin híbrido todavía) — probado end-to-end con el modelo real en `tests/test_retriever.py`
+- [ ] Clasificación mínima de afirmaciones (suficiente/parcial/no localizada), sin flujo agéntico completo — pendiente, necesita acceso al modelo generativo (ver punto de arriba)
 
 ## Fase 3 — Mejora Técnica
 
