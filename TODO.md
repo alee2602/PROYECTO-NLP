@@ -5,17 +5,14 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 
 ## Fase 1 — Anteproyecto
 
-- [x] Redactar secciones 1-11 del anteproyecto (ClaimTrace)
+- [x] Redactar secciones 1-11 del anteproyecto
 - [x] Estructurar el repositorio (`src/`, `data/`, `tests/`, `requirements.txt`)
-- [ ] Limpiar typo en el resumen ejecutivo ("ClaimTrace jsjsjs") y actualizar el nombre del proyecto a "Evidentia" en todo el documento de anteproyecto
-- [ ] Completar secciones 12-16 del anteproyecto
-  - [ ] Sección 12 — Evaluación: banco de pruebas (ver Fase 4) + tabla de métricas con metas
-  - [ ] Sección 13 — Seguridad: controles para prompt injection, documentos no autorizados, info sensible, herramientas peligrosas, salidas inválidas, logs
-  - [ ] Sección 14 — Riesgos: tabla riesgo/probabilidad/impacto/mitigación/prueba (mínimo 3-5 riesgos)
-  - [ ] Sección 15 — Plan de Trabajo: tabla fase/actividad/responsable/entregable/fecha para las 6 fases
-  - [ ] Sección 16 — Referencias: papers y herramientas citadas (Sentence Transformers, FAISS, BM25, LangGraph, etc.)
-- [ ] Alinear el formato de salida (`answer`, `sources`, `abstained`, `tool_used`, `needs_human_review`) con las categorías `evidencia_suficiente/parcial/no_localizada`
-- [ ] Completar el equipo a 3-4 integrantes (el curso lo exige, actualmente son 2)
+- [x] Limpiar typo en el resumen ejecutivo y renombrar el proyecto a "Evidentia" en todo el documento
+- [x] Completar secciones 12-16 del anteproyecto (Evaluación con 25 casos, Seguridad con 7 casos adversarios, Riesgos, Plan de Trabajo, Referencias)
+- [x] Alinear el formato de salida (`answer`, `sources`, `abstained`, `tool_used`, `needs_human_review`) con `evidence_level` como extensión del esquema
+- [x] **Decisión de equipo**: se queda en 2 integrantes (Mónica, Bianca) — decisión final.
+- [ ] Reasignar en la sección 15 (Plan de Trabajo) las tareas que estaban asignadas a "Integrante 3" (interfaz en Fase 3, evaluación en Fase 4) entre Mónica y Bianca — pendiente, se hace más adelante
+- [ ] Llenar fechas concretas en la sección 15 (actualmente placeholders `[fecha]`)
 - [ ] Entregar anteproyecto
 
 ## Fase 2 — Línea Base
@@ -50,22 +47,17 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 
 ## Fase 4 — Evaluación
 
-- [ ] Construir banco de pruebas de 20 casos en `data/eval/` (campos: `id, question, expected_behavior, expected_sources, expected_pages, answerable, risk_level`)
-  - [ ] 5 preguntas directas
-  - [ ] 3 paráfrasis semántica
-  - [ ] 3 con identificadores léxicos exactos
-  - [ ] 3 compuestas (múltiples partes)
-  - [ ] 2 ambiguas
-  - [ ] 2 sin respuesta posible (abstención obligada)
-  - [ ] 2 dependientes de versión/vigencia temporal
-- [ ] Calcular métricas: Recall@k, MRR, fidelidad/fundamentación, precisión de citas, tasa de abstención, latencia (media y P95), consumo de tokens, costo estimado
-- [ ] Comparar línea base vs. versión mejorada
+- [x] Diseñar el banco de pruebas (25 casos: TC01-TC20 + TH01-TH05) en el anteproyecto, sección 12
+- [ ] Pasar el banco de pruebas de la tabla del anteproyecto a `data/eval/test_cases.json` (campos: `id, question, expected_behavior, expected_sources, expected_pages, answerable, risk_level`)
+- [ ] Fijar documentos y páginas reales del corpus D01-D10 (hoy son "por fijar" en el anteproyecto) una vez cerrado el corpus en Fase 2
+- [ ] Calcular métricas: Recall@5, MRR, fidelidad/fundamentación, exactitud de clasificación, cobertura fáctica, precisión de citas, tasa de abstención, latencia (media y P95), tokens/invocaciones/costo
+- [ ] Comparar línea base (Fase 2) vs. versión mejorada (Fase 3) con el mismo banco
 
 ## Fase 5 — Seguridad
 
-- [ ] Diseñar casos adversarios: inyección de instrucciones, evasión de permisos, acciones críticas sin autorización, alucinación forzada
-- [ ] Implementar validación de entradas, control de acceso a documentos, sanitización de logs
-- [ ] Documentar cada prueba: amenaza, componente afectado, comportamiento esperado, resultado observado, mitigación
+- [x] Diseñar casos adversarios (SEC01-SEC07, anteproyecto sección 13): inyección directa/indirecta, evasión de permisos, acción crítica sin autorización, alucinación forzada, archivo malicioso, fuga de datos en logs
+- [ ] Implementar los controles descritos: delimitación de contexto, detector de patrones de inyección, filtro por `owner_id`, lista blanca de dominios externos, límite de iteraciones/llamadas, validación Pydantic + `validate_citations`, sanitizador de logs (regex + spaCy NER)
+- [ ] Ejecutar SEC01-SEC07 contra el sistema real y llenar la columna "Resultado observado" (hoy "Por medir") en el anteproyecto
 
 ## Fase 6 — Demostración y Defensa
 
