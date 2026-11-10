@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from src.retrieval.index import ScoredChunk
 from src.schemas.output import EvidenceLevel, EvidentiaOutput
 
+from .contradiction_check import check_contradiction
 from .llm_client import LLMClient, generate_json, get_client
 from .validate_citations import validate_citations
 
@@ -131,7 +132,8 @@ def evaluate_claim(
             raw["claim"] = claim
             raw["tool_used"] = tool_used if evidence else None
             result = EvidentiaOutput(**raw)
-            return validate_citations(result, evidence)
+            result = validate_citations(result, evidence)
+            return check_contradiction(result, evidence, client=client)
         except (ValidationError, json.JSONDecodeError, KeyError, TypeError, requests.RequestException):
             continue
 

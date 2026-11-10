@@ -78,5 +78,9 @@ def generate_json(
             "json_schema": {"name": schema_name, "schema": json_schema, "strict": True},
         },
     )
-    content = data["choices"][0]["message"]["content"]
+    message = data["choices"][0]["message"]
+    # Modelos "thinking" (ej. Qwen3.5) a veces devuelven la respuesta real en
+    # "reasoning_content" y dejan "content" vacío. Si content está vacío,
+    # usamos reasoning_content como respaldo en vez de fallar siempre.
+    content = message.get("content") or message.get("reasoning_content") or ""
     return json.loads(content)

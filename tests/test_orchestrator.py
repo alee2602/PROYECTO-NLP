@@ -57,18 +57,32 @@ def _no_localizada_response() -> str:
     )
 
 
+def _stance_response(stance: str = "respalda") -> str:
+    return json.dumps({"stance": stance})
+
+
 def test_pipeline_processes_all_extracted_claims():
     extract_response = json.dumps(
         {"claims": [{"text": "Afirmación uno."}, {"text": "Afirmación dos."}]}
     )
-    client = FakeClient([extract_response, _suficiente_response(1), _suficiente_response(2)])
+    client = FakeClient(
+        [
+            extract_response,
+            _suficiente_response(1),
+            _stance_response(),
+            _suficiente_response(2),
+            _stance_response(),
+        ]
+    )
     retriever = FakeRetriever()
 
     results = run_pipeline("documento de prueba", retriever=retriever, client=client)
 
     assert len(results) == 2
     assert all(r.evidence_level == EvidenceLevel.SUFICIENTE for r in results)
-    assert client.calls == 3  # 1 extract + 2 evaluate
+    # 1 extract + 2 x (1 evaluate + 1 contradiction_check, se activa porque
+    # evidence_level=suficiente — ver src/agent/contradiction_check.py).
+    assert client.calls == 5
     assert len(retriever.calls) == 2
 
 
@@ -85,7 +99,7 @@ def test_pipeline_returns_empty_results_when_no_claims_extracted():
 def test_pipeline_refines_search_once_when_no_evidence_found():
     extract_response = json.dumps({"claims": [{"text": "Afirmación difícil de verificar."}]})
     client = FakeClient(
-        [extract_response, _no_localizada_response(), _suficiente_response(1)]
+        [extract_response, _no_localizada_response(), _suficiente_response(1), _stance_response()]
     )
     retriever = FakeRetriever()
 
@@ -97,7 +111,9 @@ def test_pipeline_refines_search_once_when_no_evidence_found():
         ("Afirmación difícil de verificar.", DEFAULT_TOP_K),
         ("Afirmación difícil de verificar.", REFINED_TOP_K),
     ]
-    assert client.calls == 3  # 1 extract + 2 evaluate (original + refinado)
+    # 1 extract + 1 evaluate (no_localizada, sin contradiction_check) +
+    # 1 evaluate refinado (suficiente) + 1 contradiction_check.
+    assert client.calls == 4
 
 
 def test_pipeline_does_not_refine_more_than_once():

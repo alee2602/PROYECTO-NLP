@@ -44,13 +44,16 @@ def test_evaluate_claim_returns_valid_output_on_first_try():
             "needs_human_review": False,
         }
     )
-    client = FakeClient([valid_response])
+    contradiction_check_response = json.dumps({"stance": "respalda"})
+    client = FakeClient([valid_response, contradiction_check_response])
 
     result = evaluate_claim("TC01", "FAISS se usa para indexar vectores.", _make_evidence(), client=client)
 
     assert result.evidence_level == EvidenceLevel.SUFICIENTE
     assert result.sources[0].chunk_id == "D01_0000"
-    assert client.calls == 1
+    # 1 llamada a evaluate_evidence + 1 a contradiction_check (solo se activa
+    # para evidencia_suficiente, ver src/agent/contradiction_check.py).
+    assert client.calls == 2
 
 
 def test_evaluate_claim_retries_once_then_succeeds():

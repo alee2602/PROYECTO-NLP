@@ -100,8 +100,15 @@ Descargar de [lmstudio.ai](https://lmstudio.ai) e instalar normalmente.
 
 ### 2. Descargar un modelo
 
-Abrir LM Studio → pestaña de búsqueda/Discover → buscar un modelo instruct (ej. `qwen2.5-vl-7b-instruct`, que es el que usa este repo en las pruebas manuales) → descargar. Tiene que ser un modelo que soporte **salida estructurada (JSON Schema)**;
-la mayoría de modelos "instruct" recientes de Qwen, Llama o Mistral lo soportan.
+Abrir LM Studio → pestaña de búsqueda/Discover → buscar un modelo instruct de
+**solo texto** (NO uno "VL"/vision-language — esos reservan capacidad para
+imágenes y razonan peor en texto puro). Recomendado: `qwen/qwen3.5-9b`
+(el que usa este repo en las pruebas manuales — ver `DECISIONS.md`: con la
+variante VL de 7B el sistema fallaba en casos de contradicción de forma
+irresoluble por prompt; con este modelo de texto de 9B se resolvió solo
+cambiando el modelo). Tiene que soportar **salida estructurada (JSON
+Schema)**; la mayoría de modelos "instruct" recientes de Qwen, Llama o
+Mistral lo soportan.
 
 ### 3. Levantar el servidor local
 
@@ -114,7 +121,7 @@ descargado → "Start Server". Queda escuchando en `http://localhost:1234`.
 
 ```powershell
 lms server start
-lms load qwen2.5-vl-7b-instruct --context-length 16384
+lms load qwen/qwen3.5-9b --context-length 16384
 lms status   # confirma que el server está ON y el modelo cargado
 ```
 
@@ -137,7 +144,7 @@ copy .env.example .env
 ```
 LLM_BASE_URL=http://localhost:1234/v1
 LLM_API_KEY=lm-studio
-LLM_MODEL=qwen2.5-vl-7b-instruct
+LLM_MODEL=qwen/qwen3.5-9b
 ```
 
 ### 5. Probar que funciona

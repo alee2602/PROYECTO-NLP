@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-MODEL_NAME = "qwen2.5-vl-7b-instruct"
+MODEL_NAME = "qwen/qwen3.5-9b"
 os.environ.setdefault("LLM_MODEL", MODEL_NAME)
 
 from src.agent.evaluate_evidence import evaluate_claim  # noqa: E402
