@@ -60,10 +60,15 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 ## Fase 4 — Evaluación
 
 - [x] Diseñar el banco de pruebas (25 casos: TC01-TC20 + TH01-TH05) en el anteproyecto, sección 12
-- [ ] Pasar el banco de pruebas de la tabla del anteproyecto a `data/eval/test_cases.json` (campos: `id, question, expected_behavior, expected_sources, expected_pages, answerable, risk_level`)
-- [ ] Fijar documentos y páginas reales del corpus D01-D10 (hoy son "por fijar" en el anteproyecto) una vez cerrado el corpus en Fase 2
-- [ ] Calcular métricas: Recall@5, MRR, fidelidad/fundamentación, exactitud de clasificación, cobertura fáctica, precisión de citas, tasa de abstención, latencia (media y P95), tokens/invocaciones/costo
-- [ ] Comparar línea base (Fase 2) vs. versión mejorada (Fase 3) con el mismo banco
+- [x] **Banco de pruebas pasado a `data/eval/test_cases.json`** con afirmaciones reales (no genéricas) basadas en contenido verificado de D01-D10, páginas confirmadas
+- [x] **Runner implementado y corrido (`scripts/run_eval.py`)** contra el sistema completo (recuperación + LLM real + validate_citations). Resultado guardado en `logs/eval_results.json` (no versionado, reproducible).
+  - Recall@5 = 100% (21/21)
+  - Exactitud de clasificación exacta = 30% (7/23) — **ver DECISIONS.md para el desglose honesto**: 3 son fallas de generación del motor (no de razonamiento), ~13 son el modelo siendo más conservador de lo esperado (cita bien, etiqueta distinto), 1 (TC08) es una falla real de contradicción no resuelta, 1 (TC17) se salvó por suerte del chequeo numérico de `validate_citations`
+- [ ] **Pendiente real**: decidir si se intenta resolver la contradicción (TC08) con otro enfoque (no más prompt engineering, que ya mostró rendimientos decrecientes) o se documenta como limitación conocida para el reporte final
+- [ ] Recalibrar `expected_evidence_level` en varios casos del banco (algunos esperaban "suficiente" donde "parcial" es defendible — ver DECISIONS.md)
+- [ ] Implementar límites duros de parámetros (`top_k≤20`, `max_claims≤15`, anteproyecto sección 11) — TH03 confirmó que hoy NO se aplican
+- [ ] Calcular métricas adicionales: MRR, cobertura fáctica, latencia (media/P95), tokens/invocaciones/costo
+- [ ] Comparar línea base (Fase 2, solo semántico) vs. versión mejorada (Fase 3, híbrido) con el mismo banco — hoy solo se corrió contra la versión mejorada
 
 ## Fase 5 — Seguridad
 

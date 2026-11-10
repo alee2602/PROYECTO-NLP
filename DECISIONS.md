@@ -18,6 +18,28 @@ Formato por entrada:
 
 ---
 
+## [2026-11-10] Primera corrida real del banco de pruebas (Fase 4): Recall@5=100%, exactitud de clasificación=30% (con matices importantes)
+
+**Contexto**: el banco de pruebas de 25 casos del anteproyecto (sección 12) estaba escrito de forma genérica, sin afirmaciones concretas, porque se diseñó antes de tener el corpus real. Se redactaron 25 afirmaciones genuinas basadas en contenido verificado de D01-D10 (`data/eval/test_cases.json`) y se construyó `scripts/run_eval.py` para correrlas contra el sistema real y calcular métricas, en vez de seguir midiendo con ejemplos sueltos.
+
+**Resultado crudo**: Recall@5 = 100% (21/21 — el documento esperado siempre apareció en el top-5). Exactitud de clasificación (evidence_level exacto == esperado) = 30.4% (7/23). El número de clasificación por sí solo es engañoso; desglose real tras leer las 23 respuestas completas (no solo la etiqueta):
+
+- **3/23 (TC01, TC03, TC14) son fallas de generación del motor** ("No fue posible generar una evaluación válida"), no errores de razonamiento — mismo bug de llama.cpp/LM Studio ya documentado (grammar-constrained decoding). El sistema se abstiene de forma segura, como está diseñado. Cuentan como "fallo" en la métrica estricta pero no son un defecto de clasificación.
+- **~13/23 son el modelo siendo MÁS CONSERVADOR de lo que predije** (p. ej. clasifica "evidencia_parcial" o "evidencia_no_localizada" donde yo esperaba "evidencia_suficiente"), pero citando el documento correcto y con razonamiento sólido en el campo `answer`. Ejemplos concretos inspeccionados: TC06 identificó la paráfrasis completa correctamente pero la etiquetó "parcial"; TC13 y TC16 **detectaron correctamente** que la afirmación decía más de lo que el fragmento respalda (justo el matiz que buscaban esos casos) pero usaron una categoría más severa ("no_localizada") de la que yo anticipé ("parcial"). Es una diferencia de calibración/umbral, no un error de fondo — y es la dirección seguridad-primero (subconfianza, no sobreconfianza).
+- **1/23 (TC08) es una falla real y confirmada, no solo de calibración**: la afirmación decía que los sistemas automatizados NO reducen el tiempo/esfuerzo (falso, invierte un hallazgo de D02). El modelo escribió en su propia respuesta el hecho correcto que CONTRADICE la afirmación ("...SÍ pueden reducir el tiempo...") pero aun así clasificó `evidencia_suficiente`. **Esto confirma que el arreglo de contradicción de la entrada anterior (`SYSTEM_PROMPT` con regla + ejemplo few-shot) no generaliza a redacciones nuevas de contradicción** — sigue siendo un riesgo real, no resuelto de raíz.
+- **1/23 (TC17) se salvó por suerte, no por diseño**: la afirmación era sobre un tema totalmente ausente del corpus (traducción automática/WMT14). El modelo no reconoció limpiamente la ausencia total del tema y citó D09 (RAGAS) de forma tangencial; `validate_citations` lo degradó de categoría solo porque la cifra "14" (de "WMT14") no aparecía literalmente en el chunk citado — una coincidencia afortunada del chequeo numérico, no una detección real de "tema fuera de alcance".
+
+**Decisión**: no seguir parchando el prompt de `evaluate_evidence` por ahora — ya se intentó dos veces (contradicción, vaguedad) con éxito parcial y claros rendimientos decrecientes. Se documenta esto como limitación conocida y medida del sistema (útil directamente para la sección "limitaciones operativas" del documento técnico final, que el curso pide explícitamente). Los 25 casos y el runner quedan reutilizables para volver a medir si se cambia de modelo (ej. una API en la nube) o se ajusta el prompt más adelante.
+
+**Hallazgo adicional (TH03)**: el sistema NO aplica el límite duro `top_k ≤ 20` que pide el anteproyecto (sección 11: "se aplican los límites... top_k ≤ 20, max_claims ≤ 15") — con `top_k=500` el sistema devolvió 40 resultados (limitado solo por el tamaño real del corpus, no por una validación explícita). Esto es un gap real de validación de parámetros, no implementado todavía.
+
+**Estado**: medición confirmada con 23 casos reales corridos contra el sistema completo (recuperación + LLM real + validate_citations). Gap de contradicción (TC08) y de reconocimiento de ausencia total de tema (TC17) quedan documentados como limitaciones abiertas para la sección de seguridad/limitaciones del documento técnico.
+**Gaps abiertos**:
+- Contradicción (TC08): necesitaría un modelo más grande o una estrategia distinta (ej. un paso de verificación separado) para resolverse de raíz, no solo prompt engineering.
+- Reconocimiento de "tema totalmente fuera del corpus" (TC17): el modelo no lo detecta de forma confiable por sí mismo.
+- Validación de límites de parámetros (top_k≤20, max_claims≤15) de la sección 11 del anteproyecto: no implementada.
+- Reconsiderar si el `expected_evidence_level` de varios casos del banco de pruebas fue demasiado optimista (esperaba "suficiente" donde "parcial" es defendible) — revisar antes de usar este banco para la nota final.
+
 ## [2026-11-10] Orquestador agéntico (LangGraph) + filtro determinístico de afirmaciones vagas
 
 **Contexto**: tras conectar `extract_claims` + `search_evidence` (HybridRetriever) + `evaluate_evidence`/`validate_citations` en un grafo de LangGraph (`src/agent/orchestrator.py`, con refinamiento de búsqueda si la primera pasada no encuentra evidencia), se corrió sobre un documento real completo (D04, no afirmaciones armadas a mano) para medir calidad real, siguiendo el pedido explícito de la usuaria de no conformarse con un proyecto mediocre.
