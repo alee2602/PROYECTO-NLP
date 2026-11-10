@@ -48,13 +48,14 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 - [x] **`validate_citations` implementado como código determinístico** (`src/agent/validate_citations.py`), no delegado al LLM: (1) rechaza citas a chunks que no fueron recuperados, (2) si la afirmación tiene una cifra específica, verifica que aparezca literalmente en el texto citado, si no degrada `evidencia_suficiente` → `evidencia_parcial` + `needs_human_review=true`. 5 pruebas deterministas en `tests/test_validate_citations.py`, no dependen de un LLM real.
 - [x] **Migrado de `venv` a entorno conda** (`conda activate evidentia`) — Smart App Control bloqueaba el `torch` instalado por pip; el de Anaconda no tiene ese problema (ver DECISIONS.md). Setup actualizado en README.
 - [x] Heurística de reranking: ya satisfecha por la combinación de puntajes semántico+léxico en `HybridRetriever` (es literalmente lo que pide el anteproyecto sección 10 como "heurística inicial"); un modelo de reranking dedicado queda como mejora futura opcional
-- [ ] Implementar orquestador agéntico (`src/agent/`, LangGraph) que conecte las tools ya implementadas en un solo flujo:
-  - [ ] `extract_claims` — pendiente, todavía no implementado
+- [x] **Orquestador agéntico implementado con LangGraph** (`src/agent/orchestrator.py`): grafo `extract → search → evaluate → (refinar búsqueda una vez si no hay evidencia) → finalize`, iterando sobre todas las afirmaciones extraídas de un documento. 4 pruebas deterministas (`tests/test_orchestrator.py`) + probado end-to-end contra un documento real (D04) con LM Studio real.
+  - [x] `extract_claims` — implementado (`src/agent/extract_claims.py`) + filtro determinístico de afirmaciones vagas (`_is_too_vague`, ver DECISIONS.md — las instrucciones de prompt solas no bastaron)
   - [x] `search_evidence` — ya existe como `HybridRetriever.search` (`src/retrieval/hybrid.py`)
   - [x] `search_metadata` — implementado (`src/agent/search_metadata.py`, consulta Crossref, degrada a `None` si falla la red; probado con mocks y contra la API real)
-  - [x] `evaluate_evidence` (ya implementado como función independiente; falta integrarlo al grafo de LangGraph)
-  - [x] `validate_citations` (ya implementado y conectado dentro de `evaluate_claim`; falta exponerlo como tool independiente del agente si el diseño de LangGraph lo requiere)
-- [ ] Definir y validar esquema de salida con Pydantic (`src/schemas/`) — ya existe `EvidentiaOutput`, falta confirmar que encaja sin cambios dentro del flujo de LangGraph
+  - [x] `evaluate_evidence` — implementado e integrado al grafo
+  - [x] `validate_citations` — implementado y conectado dentro de `evaluate_claim`, atrapó una cita alucinada real en la prueba end-to-end contra D04
+- [x] Esquema de salida Pydantic (`EvidentiaOutput`) — confirmado que encaja sin cambios dentro del flujo de LangGraph (el orquestador devuelve `list[EvidentiaOutput]` directamente)
+- [ ] **Pendiente real, no cosmético**: CLAIM_002 en la prueba de D04 todavía cita un documento parcialmente no relacionado junto con el correcto (mitigado por terminar en `evidencia_parcial` + revisión humana, no resuelto de raíz). El filtro de vaguedad es una heurística angosta — revisar con más documentos/afirmaciones si aparecen más casos así.
 
 ## Fase 4 — Evaluación
 
