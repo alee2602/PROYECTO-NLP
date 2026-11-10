@@ -32,7 +32,8 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 - [x] Generar embeddings (`src/retrieval/embeddings.py`) con `paraphrase-multilingual-MiniLM-L12-v2`
 - [x] Construir índice vectorial (`src/retrieval/index.py`, FAISS `IndexFlatIP`)
 - [x] Recuperación semántica básica (`src/retrieval/retriever.py`, `SemanticRetriever`, sin híbrido todavía) — probado end-to-end con el modelo real en `tests/test_retriever.py`
-- [ ] Clasificación mínima de afirmaciones (suficiente/parcial/no localizada), sin flujo agéntico completo — pendiente, necesita acceso al modelo generativo (ver punto de arriba)
+- [x] Clasificación mínima de afirmaciones (`src/agent/evaluate_evidence.py`), sin flujo agéntico completo todavía — usa `src/agent/llm_client.py`, compatible con LM Studio local o cualquier API compatible con OpenAI vía variables de entorno (`.env.example`)
+- [x] Probar `evaluate_claim` contra LM Studio real (`qwen2.5-vl-7b-instruct`) — funciona con salida estructurada vía JSON Schema (ver `scripts/check_llm.py`)
 
 ## Fase 3 — Mejora Técnica
 

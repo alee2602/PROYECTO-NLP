@@ -18,6 +18,22 @@ Formato por entrada:
 
 ---
 
+## [2026-11-09] Modelo generativo: cliente compatible con OpenAI (LM Studio por defecto)
+
+**Contexto**: el anteproyecto no fijaba un proveedor de LLM concreto; había que decidir cómo generar la clasificación fundamentada (`evaluate_evidence`).
+**Decisión**: `src/agent/llm_client.py` usa el SDK `openai`, pero apuntado a `LLM_BASE_URL` (default `http://localhost:1234/v1`, el servidor local de LM Studio). Cambiar de proveedor es solo cambiar variables de entorno (`.env.example`), no código. `src/schemas/output.py` define `EvidentiaOutput` con las reglas de consistencia exactas de la sección 11 del anteproyecto (`abstained` ⇒ `sources` vacío y `evidence_level=evidencia_no_localizada`; `evidencia_suficiente` ⇒ al menos una fuente). `src/agent/evaluate_evidence.py` reintenta una vez si la salida no valida y si vuelve a fallar se abstiene con `needs_human_review=True`, tal como pide el anteproyecto.
+**Alternativas consideradas**: Ollama (similar, se descartó por ahora a favor de LM Studio por preferencia del equipo); comprometerse directo con una API de pago (Claude Haiku/GPT-4o-mini) — se pospuso para no gastar mientras se desarrolla; el plan es comparar ambos antes de la Fase 4 (ver TODO Fase 2).
+**Estado**: confirmada y validada contra LM Studio real (ver entrada siguiente).
+**Gaps abiertos**: ninguno por ahora; revisar de nuevo si cambian de modelo cargado en LM Studio.
+
+## [2026-11-09] Cliente LLM por REST directo (no SDK `openai`) + JSON Schema en vez de json_object
+
+**Contexto**: al probar `evaluate_claim` contra LM Studio real por primera vez, el SDK `openai` falló al importar (`ImportError: DLL load failed while importing jiter: Una directiva de Control de aplicaciones bloqueó este archivo`) — Windows (Smart App Control u otra política similar) bloqueó el binario nativo de `jiter`, una dependencia del SDK. Además, una vez resuelto eso, LM Studio devolvió `400 Bad Request: 'response_format.type' must be 'json_schema' or 'text'` — su servidor no soporta el modo `json_object` de OpenAI, solo `json_schema` (salida con grammar constraints) o `text`.
+**Decisión**: se quitó la dependencia del SDK `openai` por completo; `src/agent/llm_client.py` ahora llama directo al endpoint REST `/chat/completions` con `requests` (ya era dependencia del proyecto para Crossref/OpenAlex). `generate_json` ahora exige un `json_schema` explícito y usa `response_format={"type": "json_schema", ...}`. `evaluate_evidence.py` define `RESPONSE_SCHEMA` con los campos esperados (`answer`, `sources`, `abstained`, `evidence_level`, `needs_human_review`). Probado end-to-end contra `qwen2.5-vl-7b-instruct` corriendo en LM Studio: clasificó correctamente una afirmación como `evidencia_suficiente`, citando la fuente correcta.
+**Alternativas consideradas**: arreglar el bloqueo de `jiter` (reinstalar, agregar excepción en Windows) — descartado por ser más fràgil y específico de esta máquina; usar `response_format={"type": "text"}` y parsear JSON del texto libre — descartado porque la salida estructurada con `json_schema` es más confiable (grammar-constrained).
+**Estado**: confirmada, validada con hardware/modelo real.
+**Gaps abiertos**: si cambian de LLM Studio a un proveedor en la nube (Claude Haiku, etc., ver decisión anterior), confirmar que ese proveedor también soporta `response_format: json_schema` con el mismo formato — si no, `generate_json` necesitará una rama alterna.
+
 ## [2026-11-09] Implementación de embeddings + índice vectorial (Fase 2)
 
 **Contexto**: siguiente paso tras el pipeline de ingesta — convertir chunks en vectores y poder recuperarlos por similitud.
