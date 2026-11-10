@@ -4,8 +4,24 @@ from collections import Counter
 from .extractor import PageText
 
 
+# Ligaduras tipográficas comunes en PDFs académicos (ej. "ﬁnd" en vez de
+# "find"). Sin normalizar, estos caracteres llegaron a provocar un error en
+# el motor de decodificación con grammar de LM Studio al generar JSON
+# estructurado (ver DECISIONS.md).
+_LIGATURES = {
+    "ﬁ": "fi",
+    "ﬂ": "fl",
+    "ﬀ": "ff",
+    "ﬃ": "ffi",
+    "ﬄ": "ffl",
+    "ﬆ": "st",
+}
+
+
 def clean_text(text: str) -> str:
     text = text.replace("­", "")  # soft hyphen
+    for ligature, replacement in _LIGATURES.items():
+        text = text.replace(ligature, replacement)
     text = re.sub(r"-\n(?=\w)", "", text)  # de-hyphenate words split across lines
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)

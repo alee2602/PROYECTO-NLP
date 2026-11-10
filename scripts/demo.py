@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.agent.evaluate_evidence import evaluate_claim  # noqa: E402
-from src.retrieval.retriever import SemanticRetriever  # noqa: E402
+from src.retrieval.hybrid import HybridRetriever  # noqa: E402
 from src.schemas.chunk import ChunkMetadata  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -69,7 +69,7 @@ def main():
     chunks = load_chunks()
     print(f"Corpus cargado: {len(chunks)} chunks\n")
 
-    retriever = SemanticRetriever()
+    retriever = HybridRetriever()
     retriever.index_chunks(chunks)
 
     for item in DEMO_CLAIMS:
@@ -78,8 +78,8 @@ def main():
         print(f"Esperado (referencia humana): {item['expect']}")
         print("-" * 90)
 
-        retrieved = retriever.search(item["claim"], top_k=3)
-        print("Evidencia recuperada (top-3):")
+        retrieved = retriever.search(item["claim"], top_k=5)
+        print("Evidencia recuperada (top-5):")
         for r in retrieved:
             snippet = r.chunk.text[:150].replace("\n", " ")
             print(f"  [{r.score:.3f}] {r.chunk.document_id} p.{r.chunk.page} | {snippet}...")

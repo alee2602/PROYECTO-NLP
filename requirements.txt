@@ -10,7 +10,7 @@ sentence-transformers
 
 # Recuperación
 faiss-cpu
-rank-bm25
+# BM25 implementado directamente en src/retrieval/lexical.py (sin dependencia externa)
 
 # Orquestación agéntica
 langgraph

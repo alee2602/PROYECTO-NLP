@@ -91,9 +91,13 @@ descargado → "Start Server". Queda escuchando en `http://localhost:1234`.
 
 ```powershell
 lms server start
-lms load qwen2.5-vl-7b-instruct
+lms load qwen2.5-vl-7b-instruct --context-length 16384
 lms status   # confirma que el server está ON y el modelo cargado
 ```
+
+**Importante**: usar `--context-length 16384` (o más). Con el contexto por
+defecto (4096 tokens) el sistema falla con `top_k=5` evidencias — 5 chunks de
+~450 palabras más el prompt superan ese límite (ver `DECISIONS.md`).
 
 (`lms` se instala junto con LM Studio, normalmente en
 `%USERPROFILE%\.lmstudio\bin\lms.exe`.)
