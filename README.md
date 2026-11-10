@@ -16,13 +16,14 @@ referencias documentales usados para facilitar su verificación.
 ```
 data/
   raw/        PDFs originales del corpus (no versionados, ver .gitignore)
-  processed/  Chunks + metadatos ya procesados
+  processed/  documents.json (metadata, versionado) y chunks.jsonl (texto, no versionado)
   eval/       Banco de pruebas de evaluación (casos de prueba)
 src/
-  ingestion/  Carga, extracción, limpieza, chunking
+  ingestion/  Carga, extracción, limpieza, chunking, fuente de arXiv
   retrieval/  Embeddings, índice vectorial, búsqueda híbrida
-  agent/      Orquestador y herramientas (extract_claims, search_evidence, etc.)
-  schemas/    Modelos Pydantic de validación de entrada/salida
+  agent/      Orquestador, herramientas (extract_claims, search_evidence, etc.) y cliente LLM
+  schemas/    Modelos Pydantic de metadatos y del esquema de salida obligatorio
+scripts/      Scripts de uso manual (armar corpus, probar el LLM)
 tests/        Pruebas unitarias y de integración
 docs/         Anteproyecto y documentación técnica
 ```
@@ -43,6 +44,92 @@ python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+## Datos: cómo regenerarlos en tu máquina
+
+`data/raw/` (PDFs) y `data/processed/chunks.jsonl` (texto completo de los chunks)
+**no se suben a git** — ni los PDFs originales ni el texto extraído de papers de
+terceros se redistribuyen por este medio (ver `DECISIONS.md`). Lo único versionado
+es `data/processed/documents.json`, que solo tiene metadata bibliográfica.
+
+Si clonas el repo de cero, para tener los datos localmente corre:
+
+```bash
+venv\Scripts\python.exe scripts\build_corpus.py
+```
+
+Esto descarga los 10 papers de arXiv (D01-D10) a `data/raw/`, los procesa con el
+pipeline de ingesta, y regenera `data/processed/documents.json` y `chunks.jsonl`.
+Es reproducible: siempre arma el mismo corpus (mismas queries, mismo filtro de
+duplicados/tamaño) salvo que arXiv cambie qué devuelve como más relevante para esas
+búsquedas.
+
+## Usar el modelo generativo con LM Studio
+
+El sistema necesita un LLM para `evaluate_evidence` (clasificar afirmaciones contra
+evidencia). Por defecto el proyecto apunta a **LM Studio corriendo en tu propia
+máquina** (gratis, privado, sin API key) — ver `src/agent/llm_client.py` y
+`DECISIONS.md` para el porqué.
+
+### 1. Instalar LM Studio
+
+Descargar de [lmstudio.ai](https://lmstudio.ai) e instalar normalmente.
+
+### 2. Descargar un modelo
+
+Abrir LM Studio → pestaña de búsqueda/Discover → buscar un modelo instruct (ej. `qwen2.5-vl-7b-instruct`, que es el que usa este repo en las pruebas manuales) → descargar. Tiene que ser un modelo que soporte **salida estructurada (JSON Schema)**;
+la mayoría de modelos "instruct" recientes de Qwen, Llama o Mistral lo soportan.
+
+### 3. Levantar el servidor local
+
+Dos formas, cualquiera funciona:
+
+**Desde la app**: pestaña del servidor local (ícono `<->`) → seleccionar el modelo
+descargado → "Start Server". Queda escuchando en `http://localhost:1234`.
+
+**Desde la terminal** (más rápido, no hay que abrir la ventana de LM Studio):
+
+```powershell
+lms server start
+lms load qwen2.5-vl-7b-instruct
+lms status   # confirma que el server está ON y el modelo cargado
+```
+
+(`lms` se instala junto con LM Studio, normalmente en
+`%USERPROFILE%\.lmstudio\bin\lms.exe`.)
+
+### 4. Configurar las variables de entorno
+
+Copiar `.env.example` a `.env` y ajustar `LLM_MODEL` al identificador exacto del
+modelo que cargaste (el mismo nombre que usas en `lms load`):
+
+```bash
+copy .env.example .env
+```
+
+```
+LLM_BASE_URL=http://localhost:1234/v1
+LLM_API_KEY=lm-studio
+LLM_MODEL=qwen2.5-vl-7b-instruct
+```
+
+### 5. Probar que funciona
+
+```bash
+venv\Scripts\python.exe scripts\check_llm.py
+```
+
+Si todo está bien, imprime un `EvidentiaOutput` válido (clasificación, fuentes, etc.)
+en vez de la respuesta de abstención por fallo. Si falla, revisar que el servidor
+esté `ON` (`lms status`) y que `LLM_MODEL` coincida exactamente con el modelo cargado.
+
+### Nota sobre el SDK de OpenAI
+
+El proyecto **no usa el SDK `openai`**, habla directo por REST con `requests` —
+en Windows, el SDK falló por un binario nativo (`jiter`) bloqueado por Smart App
+Control. Si cambian de proveedor (a una API en la nube en vez de LM Studio), solo
+hay que cambiar las variables de entorno, no el código — pero confirmar que ese
+proveedor también soporte `response_format: json_schema` (ver `DECISIONS.md`).
 
 ## Integrantes
 
