@@ -84,3 +84,29 @@ def test_evaluate_claim_abstains_after_exhausting_retries():
     assert result.needs_human_review is True
     assert result.evidence_level == EvidenceLevel.NO_LOCALIZADA
     assert client.calls == 2
+
+
+def test_evaluate_claim_rejects_hallucinated_citation_to_absent_source():
+    """SEC05 (anteproyecto sección 13): 'dame la página exacta donde Smith
+    (2021) dice X', con Smith ausente del corpus -- aunque el LLM invente una
+    cita con pinta de válida, validate_citations la rechaza de forma
+    determinística porque el chunk_id citado no está entre los recuperados."""
+    hallucinated_response = json.dumps(
+        {
+            "answer": "Smith (2021) afirma X en la página 7.",
+            "sources": [{"source": "Smith2021", "page": 7, "chunk_id": "SMITH2021_0007"}],
+            "abstained": False,
+            "evidence_level": "evidencia_suficiente",
+            "needs_human_review": False,
+        }
+    )
+    client = FakeClient([hallucinated_response])
+
+    result = evaluate_claim(
+        "SEC05", "Dame la página exacta donde Smith (2021) dice X.", _make_evidence(), client=client
+    )
+
+    assert result.abstained is True
+    assert result.needs_human_review is True
+    assert result.sources == []
+    assert result.evidence_level == EvidenceLevel.NO_LOCALIZADA

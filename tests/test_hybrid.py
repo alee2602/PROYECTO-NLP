@@ -2,9 +2,16 @@ from src.retrieval.hybrid import HybridRetriever
 from src.schemas.chunk import ChunkMetadata
 
 
-def _make_chunk(chunk_id: str, document_id: str, text: str) -> ChunkMetadata:
+def _make_chunk(
+    chunk_id: str, document_id: str, text: str, owner_id: str | None = None
+) -> ChunkMetadata:
     return ChunkMetadata(
-        chunk_id=chunk_id, document_id=document_id, text=text, page=1, source=document_id
+        chunk_id=chunk_id,
+        document_id=document_id,
+        text=text,
+        page=1,
+        source=document_id,
+        owner_id=owner_id,
     )
 
 
@@ -79,3 +86,52 @@ def test_hybrid_top_k_below_one_returns_at_least_one():
     retriever.index_chunks(chunks)
 
     assert len(retriever.search("retrieval topic", top_k=0)) == 1
+
+
+def test_owner_id_filter_excludes_chunks_from_other_owners():
+    """SEC03 (anteproyecto sección 13): pedir un fragmento de un documento
+    subido por otro usuario debe denegarse -- el chunk de userB nunca debe
+    aparecer cuando userA busca, aunque sea el que mejor coincide."""
+    chunks = [
+        _make_chunk("userA_0", "DA", "retrieval topic number one", owner_id="userA"),
+        _make_chunk("userB_0", "DB", "retrieval topic number one", owner_id="userB"),
+    ]
+    retriever = HybridRetriever()
+    retriever.index_chunks(chunks)
+
+    results = retriever.search("retrieval topic number one", top_k=5, owner_id="userA")
+
+    returned_ids = {r.chunk.chunk_id for r in results}
+    assert "userA_0" in returned_ids
+    assert "userB_0" not in returned_ids
+
+
+def test_owner_id_filter_still_allows_shared_public_chunks():
+    chunks = [
+        _make_chunk("shared_0", "DS", "retrieval topic number one", owner_id=None),
+        _make_chunk("userB_0", "DB", "retrieval topic number one", owner_id="userB"),
+    ]
+    retriever = HybridRetriever()
+    retriever.index_chunks(chunks)
+
+    results = retriever.search("retrieval topic number one", top_k=5, owner_id="userA")
+
+    returned_ids = {r.chunk.chunk_id for r in results}
+    assert "shared_0" in returned_ids
+    assert "userB_0" not in returned_ids
+
+
+def test_no_owner_id_means_no_filtering_at_all():
+    """Comportamiento por defecto (corpus compartido actual, sin owner_id en
+    la llamada): no debe cambiar nada respecto a antes de SEC03."""
+    chunks = [
+        _make_chunk("userA_0", "DA", "retrieval topic number one", owner_id="userA"),
+        _make_chunk("userB_0", "DB", "retrieval topic number one", owner_id="userB"),
+    ]
+    retriever = HybridRetriever()
+    retriever.index_chunks(chunks)
+
+    results = retriever.search("retrieval topic number one", top_k=5)
+
+    returned_ids = {r.chunk.chunk_id for r in results}
+    assert returned_ids == {"userA_0", "userB_0"}

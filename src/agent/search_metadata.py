@@ -1,5 +1,7 @@
 import requests
 
+from src.security.network_whitelist import DisallowedDomainError, require_allowed_domain
+
 CROSSREF_BASE_URL = "https://api.crossref.org/works"
 DEFAULT_TIMEOUT = 10
 
@@ -31,13 +33,16 @@ def search_metadata(
     devuelve None en vez de propagar la excepción (anteproyecto TH05)."""
     try:
         if doi:
-            response = requests.get(f"{CROSSREF_BASE_URL}/{doi}", timeout=timeout)
+            url = f"{CROSSREF_BASE_URL}/{doi}"
+            require_allowed_domain(url)
+            response = requests.get(url, timeout=timeout)
             if response.status_code == 404:
                 return None
             response.raise_for_status()
             return _format_item(response.json()["message"])
 
         if title:
+            require_allowed_domain(CROSSREF_BASE_URL)
             params = {"query.bibliographic": title, "rows": 1}
             if author:
                 params["query.author"] = author
@@ -47,5 +52,5 @@ def search_metadata(
             return _format_item(items[0]) if items else None
 
         return None
-    except requests.RequestException:
+    except (requests.RequestException, DisallowedDomainError):
         return None

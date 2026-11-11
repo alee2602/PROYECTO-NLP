@@ -38,6 +38,10 @@ class EvidentiaOutput(BaseModel):
                 raise ValueError(
                     "abstained=True requires evidence_level=evidencia_no_localizada"
                 )
+            if not self.needs_human_review:
+                # Fase 5 / SEC04-SEC05 (anteproyecto sección 13): una abstención
+                # debe detenerse y pedir confirmación humana, no quedar silenciosa.
+                raise ValueError("abstained=True requires needs_human_review=True")
         if self.evidence_level == EvidenceLevel.SUFICIENTE and not self.sources:
             raise ValueError(
                 "evidence_level=evidencia_suficiente requires at least one source"

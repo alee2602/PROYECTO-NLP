@@ -28,7 +28,7 @@ class FakeRetriever:
         )
         self._evidence = [ScoredChunk(chunk=chunk, score=0.9)]
 
-    def search(self, query: str, top_k: int = 5):
+    def search(self, query: str, top_k: int = 5, owner_id: str | None = None):
         self.calls.append((query, top_k))
         return self._evidence
 
@@ -52,7 +52,7 @@ def _no_localizada_response() -> str:
             "sources": [],
             "abstained": True,
             "evidence_level": "evidencia_no_localizada",
-            "needs_human_review": False,
+            "needs_human_review": True,
         }
     )
 

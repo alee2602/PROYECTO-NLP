@@ -26,14 +26,20 @@ cada número y decisión está ahí — esto es solo el resumen.
   duplicado a 20 documentos como distractores. 70/70 tests unitarios pasan.
   Bianca implementó y confirmó contra el sistema real los límites duros de
   `top_k≤20`/`max_claims≤15` que pedía el anteproyecto (`src/limits.py`).
+- **Fase 5 (Seguridad)**: completa. Los 7 controles SEC01-SEC07 están
+  implementados, probados (25 tests nuevos, 106/106 en total) y además
+  confirmados con una corrida end-to-end real contra el sistema completo
+  (corpus real + LM Studio) vía `scripts/run_security_eval.py` —
+  **7/7 casos pasan**. Tabla de "Resultado observado" lista para copiar al
+  anteproyecto, ver `DECISIONS.md`. Punto a favor encontrado en el camino:
+  el chequeo de SEC06 reveló y arregló un bug real preexistente en
+  `pdf_loader.py`. **Gap documentado, no oculto**: spaCy NER (para detectar
+  nombres propios en logs, SEC07) sigue bloqueado por el Control de
+  aplicaciones de Windows — la sanitización hoy es solo por regex
+  (correos/teléfonos), ya confirmada contra el sistema real.
 
-## No empezado — esto es lo que sigue, no solo documentación
+## No empezado
 
-- **Fase 5 (Seguridad)**: los 7 casos adversarios (SEC01-SEC07) están
-  *diseñados* en el anteproyecto pero *nada de los controles está
-  implementado* (delimitación de contexto, detector de inyección, filtro por
-  `owner_id`, lista blanca de dominios, límite de iteraciones, sanitizador de
-  logs). Es la única fase de código que falta por completo.
 - **Fase 6 (Demostración y Defensa)**: documento técnico final, guion de
   demo, preparación de la defensa oral — todo pendiente, pero puede apoyarse
   directamente en `DECISIONS.md` (ya tiene casi todo el contenido de

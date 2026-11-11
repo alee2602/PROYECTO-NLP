@@ -76,8 +76,15 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 ## Fase 5 — Seguridad
 
 - [x] Diseñar casos adversarios (SEC01-SEC07, anteproyecto sección 13): inyección directa/indirecta, evasión de permisos, acción crítica sin autorización, alucinación forzada, archivo malicioso, fuga de datos en logs
-- [ ] Implementar los controles descritos: delimitación de contexto, detector de patrones de inyección, filtro por `owner_id`, lista blanca de dominios externos, límite de iteraciones/llamadas, validación Pydantic + `validate_citations`, sanitizador de logs (regex + spaCy NER)
-- [ ] Ejecutar SEC01-SEC07 contra el sistema real y llenar la columna "Resultado observado" (hoy "Por medir") en el anteproyecto
+- [x] **Implementar los 7 controles** (ver DECISIONS.md para el detalle completo de cada uno, verificado con 25 tests nuevos, 106/106 en total):
+  - [x] SEC01 — detector de patrones de inyección + separación de roles (`src/security/injection_guard.py`, `src/agent/injection_check.py`)
+  - [x] SEC02 — filtro de texto invisible en PDF (`src/ingestion/extractor.py`, cero regresión en los 20 docs reales) + marcado de fragmentos sospechosos (reusa `check_injection`)
+  - [x] SEC03 — filtro por `owner_id` (`ChunkMetadata.owner_id`, `HybridRetriever.search(owner_id=...)`)
+  - [x] SEC04 — límite de iteraciones (ya existía estructuralmente, confirmado) + lista blanca de dominios (`src/security/network_whitelist.py`)
+  - [x] SEC05 — alucinación forzada: cubierto por `validate_citations` + regla de abstención del esquema, test explícito agregado
+  - [x] SEC06 — validación de archivo: encontrado y arreglado un bug preexistente real en `pdf_loader.py` (`doc.close()` antes de leer `doc.page_count`), agregado detector de JavaScript embebido (vía sintaxis de objetos PDF, no bytes crudos — el enfoque de bytes crudos daba falsos positivos reales en 2/20 documentos)
+  - [x] SEC07 — sanitizador de logs (`src/security/log_sanitizer.py`, `src/security/event_log.py`), conectado en `evaluate_claim` (registra solo un hash de la afirmación, nunca el texto). **Gap documentado**: spaCy NER sigue bloqueado por Smart App Control en este entorno (igual que torch/openai antes) — sanitización hoy es solo por regex (correos/teléfonos), detección de nombres propios queda pendiente.
+- [x] **Ejecutado SEC01-SEC07 contra el sistema real** (corpus completo + LM Studio `qwen/qwen3.5-9b`) con `scripts/run_security_eval.py` — **7/7 casos pasan**. Tabla de "Resultado observado" lista para copiar al anteproyecto, ver DECISIONS.md.
 
 ## Fase 6 — Demostración y Defensa
 

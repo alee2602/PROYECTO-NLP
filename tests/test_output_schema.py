@@ -56,3 +56,17 @@ def test_abstained_with_wrong_evidence_level_is_rejected():
 def test_suficiente_without_sources_is_rejected():
     with pytest.raises(ValidationError):
         EvidentiaOutput(**_base_kwargs(sources=[], evidence_level=EvidenceLevel.SUFICIENTE))
+
+
+def test_abstained_without_human_review_is_rejected():
+    """Fase 5 (SEC04/SEC05, anteproyecto sección 13): una abstención debe
+    detenerse y pedir confirmación humana, nunca quedar silenciosa."""
+    with pytest.raises(ValidationError):
+        EvidentiaOutput(
+            **_base_kwargs(
+                sources=[],
+                abstained=True,
+                needs_human_review=False,
+                evidence_level=EvidenceLevel.NO_LOCALIZADA,
+            )
+        )

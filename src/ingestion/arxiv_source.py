@@ -5,6 +5,8 @@ from pathlib import Path
 
 import requests
 
+from src.security.network_whitelist import require_allowed_domain
+
 ATOM_NS = "{http://www.w3.org/2005/Atom}"
 ARXIV_NS = "{http://arxiv.org/schemas/atom}"
 API_URL = "http://export.arxiv.org/api/query"
@@ -86,6 +88,11 @@ def extract_version(arxiv_id: str) -> str:
 
 
 def download_pdf(url: str, destination: Path) -> None:
+    # SEC04: la URL viene de un href ya parseado de la respuesta de arXiv,
+    # no la escribe directamente un usuario -- pero igual se exige que esté
+    # en la lista blanca antes de descargar nada, en vez de confiar en que
+    # el XML de origen sea siempre benigno.
+    require_allowed_domain(url)
     response = requests.get(url, timeout=60)
     response.raise_for_status()
     destination.write_bytes(response.content)

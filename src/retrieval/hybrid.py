@@ -27,6 +27,15 @@ def _extract_identifiers(text: str) -> set[str]:
     return {match.group(0).lower() for match in _IDENTIFIER_RE.finditer(text)}
 
 
+def _is_accessible(chunk: ChunkMetadata, owner_id: str | None) -> bool:
+    """SEC03 (anteproyecto sección 13): sin owner_id (comportamiento actual
+    por defecto, corpus compartido) no se filtra nada. Con un owner_id, solo
+    quedan visibles los chunks públicos (owner_id=None) o del propio owner."""
+    if owner_id is None:
+        return True
+    return chunk.owner_id is None or chunk.owner_id == owner_id
+
+
 def _normalize(scores: list[float]) -> dict[int, float]:
     """Min-max normaliza una lista de scores a [0, 1] por posición, para
     poder combinar semántico (coseno) y léxico (BM25, escala distinta)."""
@@ -69,6 +78,7 @@ class HybridRetriever:
         top_k: int = 5,
         candidate_pool: int = 20,
         use_identifier_boost: bool = True,
+        owner_id: str | None = None,
     ) -> list[ScoredChunk]:
         top_k = clamp_top_k(top_k)
         n_chunks = len(self.lexical)
@@ -76,8 +86,12 @@ class HybridRetriever:
             return []
         pool = min(max(candidate_pool, top_k), n_chunks)
 
-        semantic_hits = self.semantic.search(query, top_k=pool)
-        lexical_hits = self.lexical.search(query, top_k=pool)
+        semantic_hits = [
+            hit for hit in self.semantic.search(query, top_k=pool) if _is_accessible(hit.chunk, owner_id)
+        ]
+        lexical_hits = [
+            hit for hit in self.lexical.search(query, top_k=pool) if _is_accessible(hit.chunk, owner_id)
+        ]
 
         semantic_norm = _normalize([hit.score for hit in semantic_hits])
         lexical_norm = _normalize([hit.score for hit in lexical_hits])
@@ -98,6 +112,8 @@ class HybridRetriever:
         identifiers = _extract_identifiers(query) if use_identifier_boost else set()
         if identifiers:
             for chunk in self._chunks:
+                if not _is_accessible(chunk, owner_id):
+                    continue
                 text_lower = chunk.text.lower()
                 if any(identifier in text_lower for identifier in identifiers):
                     chunk_by_id[chunk.chunk_id] = chunk

@@ -25,7 +25,12 @@ def _base_output(**overrides) -> EvidentiaOutput:
 
 
 def test_passes_through_when_no_sources():
-    output = _base_output(sources=[], abstained=True, evidence_level=EvidenceLevel.NO_LOCALIZADA)
+    output = _base_output(
+        sources=[],
+        abstained=True,
+        needs_human_review=True,
+        evidence_level=EvidenceLevel.NO_LOCALIZADA,
+    )
     result = validate_citations(output, evidence=[])
     assert result == output
 

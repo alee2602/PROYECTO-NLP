@@ -28,6 +28,7 @@ class GraphState(TypedDict):
     refined: bool
     retriever: HybridRetriever
     client: LLMClient
+    owner_id: str | None
 
 
 def _node_extract(state: GraphState) -> dict:
@@ -40,7 +41,7 @@ def _node_extract(state: GraphState) -> dict:
 def _node_search(state: GraphState) -> dict:
     claim = state["claims"][state["claim_index"]]
     top_k = REFINED_TOP_K if state.get("refined") else DEFAULT_TOP_K
-    evidence = state["retriever"].search(claim, top_k=top_k)
+    evidence = state["retriever"].search(claim, top_k=top_k, owner_id=state.get("owner_id"))
     return {"current_evidence": evidence}
 
 
@@ -104,6 +105,7 @@ def run_pipeline(
     retriever: HybridRetriever,
     max_claims: int = 10,
     client: LLMClient | None = None,
+    owner_id: str | None = None,
 ) -> list[EvidentiaOutput]:
     max_claims = clamp_max_claims(max_claims)
     client = client or get_client()
@@ -119,6 +121,7 @@ def run_pipeline(
         "refined": False,
         "retriever": retriever,
         "client": client,
+        "owner_id": owner_id,
     }
     final_state = app.invoke(initial_state)
     return final_state["results"]
