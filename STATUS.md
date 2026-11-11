@@ -1,6 +1,6 @@
 # Estado actual del proyecto
 
-Última actualización: 2026-11-10.
+Última actualización: 2026-11-11.
 
 Foto del estado de Evidentia a hoy, para quien retome el proyecto desde aquí
 (ej. Bianca, o Mónica en una sesión futura) sin tener que leer las 20+
@@ -23,7 +23,9 @@ cada número y decisión está ahí — esto es solo el resumen.
   actuales: **Recall@5 = 100% (21/21)**, **exactitud de clasificación =
   86.96% (20/23)**, verificado con un ablation de recuperación (no es un
   artefacto de corpus chico ni del boost de identificadores) y con el corpus
-  duplicado a 20 documentos como distractores. 67/67 tests unitarios pasan.
+  duplicado a 20 documentos como distractores. 70/70 tests unitarios pasan.
+  Bianca implementó y confirmó contra el sistema real los límites duros de
+  `top_k≤20`/`max_claims≤15` que pedía el anteproyecto (`src/limits.py`).
 
 ## No empezado — esto es lo que sigue, no solo documentación
 
@@ -42,7 +44,6 @@ cada número y decisión está ahí — esto es solo el resumen.
 No bloquean nada, ver `TODO.md` para el detalle:
 - Recalibrar `expected_evidence_level` en algunos casos del banco
 - Revisar la métrica Recall@5 para casos multi-documento (TC14)
-- Aplicar los límites duros de `top_k`/`max_claims`
 - Medir MRR/latencia/costo
 - Comparar línea base vs. versión mejorada con el mismo banco
 

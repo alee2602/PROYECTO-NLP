@@ -23,8 +23,8 @@ Formato por entrada:
 **Contexto**: TH03 (ver entrada de la Fase 4) mostró que el sistema no aplicaba los límites de la sección 11 del anteproyecto; con `top_k=500` devolvía todo lo que hubiera en el corpus.
 **Decisión**: nuevo módulo `src/limits.py` con `MAX_TOP_K=20` y `MAX_CLAIMS=15`. Se aplican recortando (clamp a `[1, máx]`) en los puntos de entrada: `HybridRetriever.search`, `extract_claims` y `run_pipeline`. Un valor ≤ 0 se sube a 1. Además `candidate_pool` nunca queda por debajo de `top_k`.
 **Alternativas consideradas**: lanzar error ante valores fuera de rango — descartado porque el anteproyecto dice que los límites "se aplican", y recortar degrada de forma segura sin romper el flujo.
-**Estado**: confirmada. 3 tests nuevos (`test_hybrid.py`, `test_extract_claims.py`), 70/70 pasan. No se aplica en `SemanticRetriever`/`LexicalIndex` directos (son componentes internos; el punto de entrada del sistema es el híbrido).
-**Gaps abiertos**: falta re-correr TH03 en `scripts/run_eval.py` para confirmar el resultado en el runner real (requiere LM Studio).
+**Estado**: confirmada. 3 tests nuevos (`test_hybrid.py`, `test_extract_claims.py`), 70/70 pasan. No se aplica en `SemanticRetriever`/`LexicalIndex` directos (son componentes internos; el punto de entrada del sistema es el híbrido). **Re-corrido TH03 contra el sistema real (2026-11-11, LM Studio + `qwen/qwen3.5-9b`)**: `n_results_for_top_k_500` pasó de 40 a **20**, `hard_cap_top_k_20_enforced: true` — confirmado en el runner real, no solo en unit tests. El resto del banco se mantiene estable (Recall@5=100%, clasificación=86.96%).
+**Gaps abiertos**: ninguno — cerrado.
 
 ## [2026-11-10] Exactitud de clasificación 69.57% → 86.96%: dos arreglos reales, uno revertido por regresión, y no-determinismo confirmado en casos límite
 
