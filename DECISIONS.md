@@ -18,6 +18,14 @@ Formato por entrada:
 
 ---
 
+## [2026-11-10] Límites duros de parámetros (top_k ≤ 20, max_claims ≤ 15)
+
+**Contexto**: TH03 (ver entrada de la Fase 4) mostró que el sistema no aplicaba los límites de la sección 11 del anteproyecto; con `top_k=500` devolvía todo lo que hubiera en el corpus.
+**Decisión**: nuevo módulo `src/limits.py` con `MAX_TOP_K=20` y `MAX_CLAIMS=15`. Se aplican recortando (clamp a `[1, máx]`) en los puntos de entrada: `HybridRetriever.search`, `extract_claims` y `run_pipeline`. Un valor ≤ 0 se sube a 1. Además `candidate_pool` nunca queda por debajo de `top_k`.
+**Alternativas consideradas**: lanzar error ante valores fuera de rango — descartado porque el anteproyecto dice que los límites "se aplican", y recortar degrada de forma segura sin romper el flujo.
+**Estado**: confirmada. 3 tests nuevos (`test_hybrid.py`, `test_extract_claims.py`), 70/70 pasan. No se aplica en `SemanticRetriever`/`LexicalIndex` directos (son componentes internos; el punto de entrada del sistema es el híbrido).
+**Gaps abiertos**: falta re-correr TH03 en `scripts/run_eval.py` para confirmar el resultado en el runner real (requiere LM Studio).
+
 ## [2026-11-10] Exactitud de clasificación 69.57% → 86.96%: dos arreglos reales, uno revertido por regresión, y no-determinismo confirmado en casos límite
 
 **Contexto**: tras la corrida de 69.57% (16/23), se leyeron las respuestas completas (no solo la etiqueta) de los 7 casos restantes para separar errores reales de errores de mi propio banco de pruebas. Se identificaron 3 causas concretas, cada una arreglada por separado y verificada contra el sistema real (LM Studio + corpus de 20 documentos), siguiendo el método ya establecido: nunca declarar un arreglo resuelto sin re-correr `scripts/run_eval.py`.
@@ -79,13 +87,13 @@ Formato por entrada:
 
 **Decisión**: no seguir parchando el prompt de `evaluate_evidence` por ahora — ya se intentó dos veces (contradicción, vaguedad) con éxito parcial y claros rendimientos decrecientes. Se documenta esto como limitación conocida y medida del sistema (útil directamente para la sección "limitaciones operativas" del documento técnico final, que el curso pide explícitamente). Los 25 casos y el runner quedan reutilizables para volver a medir si se cambia de modelo (ej. una API en la nube) o se ajusta el prompt más adelante.
 
-**Hallazgo adicional (TH03)**: el sistema NO aplica el límite duro `top_k ≤ 20` que pide el anteproyecto (sección 11: "se aplican los límites... top_k ≤ 20, max_claims ≤ 15") — con `top_k=500` el sistema devolvió 40 resultados (limitado solo por el tamaño real del corpus, no por una validación explícita). Esto es un gap real de validación de parámetros, no implementado todavía.
+**Hallazgo adicional (TH03)**: el sistema NO aplica el límite duro `top_k ≤ 20` que pide el anteproyecto (sección 11: "se aplican los límites... top_k ≤ 20, max_claims ≤ 15") — con `top_k=500` el sistema devolvió 40 resultados (limitado solo por el tamaño real del corpus, no por una validación explícita). Esto era un gap real de validación de parámetros; resuelto el 2026-11-10 (ver entrada "Límites duros de parámetros").
 
 **Estado**: medición confirmada con 23 casos reales corridos contra el sistema completo (recuperación + LLM real + validate_citations). Gap de contradicción (TC08) y de reconocimiento de ausencia total de tema (TC17) quedan documentados como limitaciones abiertas para la sección de seguridad/limitaciones del documento técnico.
 **Gaps abiertos**:
 - Contradicción (TC08): necesitaría un modelo más grande o una estrategia distinta (ej. un paso de verificación separado) para resolverse de raíz, no solo prompt engineering.
 - Reconocimiento de "tema totalmente fuera del corpus" (TC17): el modelo no lo detecta de forma confiable por sí mismo.
-- Validación de límites de parámetros (top_k≤20, max_claims≤15) de la sección 11 del anteproyecto: no implementada.
+- ~~Validación de límites de parámetros (top_k≤20, max_claims≤15)~~: resuelto el 2026-11-10, ver entrada "Límites duros de parámetros".
 - Reconsiderar si el `expected_evidence_level` de varios casos del banco de pruebas fue demasiado optimista (esperaba "suficiente" donde "parcial" es defendible) — revisar antes de usar este banco para la nota final.
 
 ## [2026-11-10] Orquestador agéntico (LangGraph) + filtro determinístico de afirmaciones vagas

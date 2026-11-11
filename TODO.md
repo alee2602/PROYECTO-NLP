@@ -19,7 +19,7 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 
 - [x] Armar corpus inicial: 10 papers de arXiv (D01-D10) vía `scripts/build_corpus.py`, descargados a `data/raw/` (no versionados) y procesados a `data/processed/documents.json` (metadata, sí versionado) y `chunks.jsonl` (texto completo, no versionado — ver DECISIONS.md)
 - [ ] Elegir documentos propios del equipo con autorización (opcional, el corpus de arXiv ya cumple el mínimo de 5-10)
-- [ ] Conseguir acceso al modelo generativo (API key de Claude/OpenAI/Gemini, o setup local con Ollama)
+- [x] Conseguir acceso al modelo generativo: LM Studio local con `qwen/qwen3.5-9b` (ver README y DECISIONS.md)
 - [x] Implementar pipeline de ingesta (`src/ingestion/`)
   - [x] Carga y validación de PDF (`pdf_loader.py`: tipo, tamaño, páginas, cifrado)
   - [x] Extracción de texto por página (`extractor.py`, PyMuPDF)
@@ -69,7 +69,7 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 - [x] **Clasificación mejorada a 86.96% (20/23)** con dos causas raíz arregladas de verdad (no prompt tuning): (1) `validate_citations` tomaba IDs de arXiv como cifras factuales a verificar — arreglado excluyéndolos antes de extraer números; (2) bug real de datos: `version` estaba hardcodeado en "1" para los 20 documentos del corpus pese a que `source` sí tenía el sufijo correcto — arreglado en `src/ingestion/arxiv_source.py` (`extract_version()`) y parcheados los datos existentes. Un tercer intento (endurecer la regla de "hechos compuestos" en el prompt) causó una regresión neta (dos casos que antes pasaban empezaron a fallar) y se revirtió. Se confirmó no-determinismo residual del motor local en casos límite (mismo código, dos corridas, conjuntos de fallos distintos). Ver DECISIONS.md para el detalle completo.
 - [ ] Recalibrar `expected_evidence_level` en varios casos del banco (algunos esperaban "suficiente" donde "parcial" es defendible — ver DECISIONS.md)
 - [ ] TC14: posible gap de metodología propia, no del sistema — Recall@5 usa overlap "any" contra `expected_sources`, por lo que un caso compuesto (dos documentos esperados) puede marcar `recall_hit=True` con solo uno de los dos recuperado. Revisar si conviene una métrica "all" para casos multi-documento.
-- [ ] Implementar límites duros de parámetros (`top_k≤20`, `max_claims≤15`, anteproyecto sección 11) — TH03 confirmó que hoy NO se aplican
+- [x] Implementar límites duros de parámetros (`top_k≤20`, `max_claims≤15`, anteproyecto sección 11) en `src/limits.py`, aplicados en `HybridRetriever.search`, `extract_claims` y `run_pipeline` (3 tests nuevos). Falta re-correr TH03 en `run_eval.py` (requiere LM Studio) para confirmarlo en el runner.
 - [ ] Calcular métricas adicionales: MRR, cobertura fáctica, latencia (media/P95), tokens/invocaciones/costo
 - [ ] Comparar línea base (Fase 2, solo semántico) vs. versión mejorada (Fase 3, híbrido) con el mismo banco — hoy solo se corrió contra la versión mejorada
 
