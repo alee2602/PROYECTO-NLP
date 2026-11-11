@@ -2,6 +2,7 @@ from typing import TypedDict
 
 from langgraph.graph import END, StateGraph
 
+from src.limits import clamp_max_claims
 from src.retrieval.hybrid import HybridRetriever
 from src.retrieval.index import ScoredChunk
 from src.schemas.output import EvidenceLevel, EvidentiaOutput
@@ -104,6 +105,7 @@ def run_pipeline(
     max_claims: int = 10,
     client: LLMClient | None = None,
 ) -> list[EvidentiaOutput]:
+    max_claims = clamp_max_claims(max_claims)
     client = client or get_client()
     app = build_graph()
     initial_state: GraphState = {

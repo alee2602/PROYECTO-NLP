@@ -4,6 +4,8 @@ import re
 import requests
 from pydantic import ValidationError
 
+from src.limits import clamp_max_claims
+
 from .llm_client import LLMClient, generate_json, get_client
 
 # Filtro determinístico de vaguedad (no confiado al LLM, ver DECISIONS.md:
@@ -88,6 +90,7 @@ def extract_claims(
     max_claims afirmaciones fácticas en el texto de un documento. Si falla
     la generación o la validación, devuelve lista vacía (degradación
     segura) en vez de propagar la excepción."""
+    max_claims = clamp_max_claims(max_claims)
     client = client or get_client()
     truncated = document_text[:MAX_INPUT_CHARS]
     user_prompt = (

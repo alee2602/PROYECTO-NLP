@@ -1,5 +1,6 @@
 import re
 
+from src.limits import clamp_top_k
 from src.schemas.chunk import ChunkMetadata
 
 from .index import ScoredChunk
@@ -69,10 +70,11 @@ class HybridRetriever:
         candidate_pool: int = 20,
         use_identifier_boost: bool = True,
     ) -> list[ScoredChunk]:
+        top_k = clamp_top_k(top_k)
         n_chunks = len(self.lexical)
         if n_chunks == 0:
             return []
-        pool = min(candidate_pool, n_chunks)
+        pool = min(max(candidate_pool, top_k), n_chunks)
 
         semantic_hits = self.semantic.search(query, top_k=pool)
         lexical_hits = self.lexical.search(query, top_k=pool)

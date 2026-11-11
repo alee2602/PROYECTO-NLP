@@ -94,3 +94,14 @@ def test_extract_claims_filters_out_vague_claims_from_llm_response():
     claims = extract_claims("documento", client=client)
 
     assert claims == ["COLIEE-2019 defined four problems related to IR."]
+
+
+def test_extract_claims_enforces_hard_max_claims_cap():
+    from src.limits import MAX_CLAIMS
+
+    response = json.dumps({"claims": [{"text": f"afirmación {i}"} for i in range(40)]})
+    client = FakeClient([response])
+
+    claims = extract_claims("documento largo", max_claims=500, client=client)
+
+    assert len(claims) == MAX_CLAIMS

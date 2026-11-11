@@ -59,3 +59,23 @@ def test_hybrid_respects_top_k():
     results = retriever.search("retrieval topic", top_k=3)
 
     assert len(results) == 3
+
+
+def test_hybrid_enforces_hard_top_k_cap():
+    from src.limits import MAX_TOP_K
+
+    chunks = [_make_chunk(f"c{i}", "D01", f"retrieval topic number {i}") for i in range(40)]
+    retriever = HybridRetriever()
+    retriever.index_chunks(chunks)
+
+    results = retriever.search("retrieval topic", top_k=500)
+
+    assert len(results) == MAX_TOP_K
+
+
+def test_hybrid_top_k_below_one_returns_at_least_one():
+    chunks = [_make_chunk(f"c{i}", "D01", f"retrieval topic number {i}") for i in range(3)]
+    retriever = HybridRetriever()
+    retriever.index_chunks(chunks)
+
+    assert len(retriever.search("retrieval topic", top_k=0)) == 1
