@@ -6,6 +6,12 @@ from src.limits import clamp_max_claims
 from src.retrieval.hybrid import HybridRetriever
 from src.retrieval.index import ScoredChunk
 from src.schemas.output import EvidenceLevel, EvidentiaOutput
+from src.security.budget import (
+    GRAPH_RECURSION_LIMIT,
+    MAX_AGENT_ITERATIONS,
+    BudgetedClient,
+    BudgetExceeded,
+)
 
 from .evaluate_evidence import evaluate_claim
 from .extract_claims import extract_claims as extract_claims_tool
@@ -26,6 +32,7 @@ class GraphState(TypedDict):
     current_evidence: list[ScoredChunk]
     current_result: EvidentiaOutput | None
     refined: bool
+    iterations: int
     retriever: HybridRetriever
     client: LLMClient
     owner_id: str | None
@@ -42,7 +49,7 @@ def _node_search(state: GraphState) -> dict:
     claim = state["claims"][state["claim_index"]]
     top_k = REFINED_TOP_K if state.get("refined") else DEFAULT_TOP_K
     evidence = state["retriever"].search(claim, top_k=top_k, owner_id=state.get("owner_id"))
-    return {"current_evidence": evidence}
+    return {"current_evidence": evidence, "iterations": state.get("iterations", 0) + 1}
 
 
 def _node_evaluate(state: GraphState) -> dict:
@@ -56,7 +63,11 @@ def _node_evaluate(state: GraphState) -> dict:
 
 def _should_refine(state: GraphState) -> str:
     result = state["current_result"]
-    if result.evidence_level == EvidenceLevel.NO_LOCALIZADA and not state.get("refined"):
+    if (
+        result.evidence_level == EvidenceLevel.NO_LOCALIZADA
+        and not state.get("refined")
+        and state.get("iterations", 0) < MAX_AGENT_ITERATIONS
+    ):
         return "refine"
     return "finalize"
 
@@ -67,7 +78,7 @@ def _node_mark_refined(state: GraphState) -> dict:
 
 def _node_finalize_claim(state: GraphState) -> dict:
     results = state["results"] + [state["current_result"]]
-    return {"results": results, "claim_index": state["claim_index"] + 1, "refined": False}
+    return {"results": results, "claim_index": state["claim_index"] + 1, "refined": False, "iterations": 0}
 
 
 def _has_more_claims(state: GraphState) -> str:
@@ -108,7 +119,7 @@ def run_pipeline(
     owner_id: str | None = None,
 ) -> list[EvidentiaOutput]:
     max_claims = clamp_max_claims(max_claims)
-    client = client or get_client()
+    client = BudgetedClient(client or get_client())
     app = build_graph()
     initial_state: GraphState = {
         "document_text": document_text,
@@ -119,9 +130,21 @@ def run_pipeline(
         "current_evidence": [],
         "current_result": None,
         "refined": False,
+        "iterations": 0,
         "retriever": retriever,
         "client": client,
         "owner_id": owner_id,
     }
-    final_state = app.invoke(initial_state)
-    return final_state["results"]
+    # stream (no invoke) para conservar resultados parciales si se agota el
+    # presupuesto de llamadas al LLM: lo ya evaluado se devuelve.
+    last_state: dict = initial_state
+    try:
+        for last_state in app.stream(
+            initial_state,
+            config={"recursion_limit": GRAPH_RECURSION_LIMIT},
+            stream_mode="values",
+        ):
+            pass
+    except BudgetExceeded:
+        pass
+    return last_state["results"]

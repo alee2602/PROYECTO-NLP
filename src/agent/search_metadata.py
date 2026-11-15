@@ -1,9 +1,14 @@
+import re
+from urllib.parse import quote
+
 import requests
 
+from src.security.budget import ExternalCallBudget
 from src.security.network_whitelist import DisallowedDomainError, require_allowed_domain
 
 CROSSREF_BASE_URL = "https://api.crossref.org/works"
 DEFAULT_TIMEOUT = 10
+_DOI_RE = re.compile(r"^10\.\d{4,9}/[^\s]+$")
 
 
 def _format_item(item: dict) -> dict:
@@ -24,6 +29,7 @@ def search_metadata(
     title: str | None = None,
     author: str | None = None,
     timeout: int = DEFAULT_TIMEOUT,
+    budget: ExternalCallBudget | None = None,
 ) -> dict | None:
     """search_metadata tool (anteproyecto sección 11): consulta metadatos
     bibliográficos en Crossref para contrastar una referencia (doi, title o
@@ -31,9 +37,14 @@ def search_metadata(
     anteproyecto) — solo para verificar que una cita corresponde a un
     documento real. Degradación controlada: ante timeout/error de red,
     devuelve None en vez de propagar la excepción (anteproyecto TH05)."""
+    if budget is not None and not budget.consume():
+        return None  # tope de llamadas externas por afirmación (sección 13)
     try:
         if doi:
-            url = f"{CROSSREF_BASE_URL}/{doi}"
+            # El DOI viene de texto no confiable: formato estricto y escapado.
+            if not _DOI_RE.match(doi) or ".." in doi:
+                return None
+            url = f"{CROSSREF_BASE_URL}/{quote(doi, safe='/')}"
             require_allowed_domain(url)
             response = requests.get(url, timeout=timeout)
             if response.status_code == 404:
