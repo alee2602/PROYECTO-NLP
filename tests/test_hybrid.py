@@ -135,3 +135,18 @@ def test_no_owner_id_means_no_filtering_at_all():
 
     returned_ids = {r.chunk.chunk_id for r in results}
     assert returned_ids == {"userA_0", "userB_0"}
+
+
+def test_owner_filter_is_applied_before_trimming_candidate_pool():
+    """Si los chunks ajenos mejor rankeados llenaran el pool antes de filtrar,
+    el dueño legítimo se quedaría sin resultados (regresión del filtro SEC03)."""
+    chunks = [
+        _make_chunk(f"B_{i}", "DB", "retrieval topic number one extra words", owner_id="userB")
+        for i in range(8)
+    ] + [_make_chunk("A_0", "DA", "retrieval topic number one", owner_id="userA")]
+    retriever = HybridRetriever()
+    retriever.index_chunks(chunks)
+
+    results = retriever.search("retrieval topic number one", top_k=3, candidate_pool=3, owner_id="userA")
+
+    assert [r.chunk.chunk_id for r in results] == ["A_0"]

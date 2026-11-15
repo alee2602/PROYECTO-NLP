@@ -86,12 +86,16 @@ class HybridRetriever:
             return []
         pool = min(max(candidate_pool, top_k), n_chunks)
 
+        # Con owner_id se pide el índice completo y se filtra ANTES de recortar
+        # a `pool`: si no, chunks ajenos mejor rankeados ocuparían el pool y
+        # dejarían sin resultados a quien sí tiene permiso.
+        fetch_k = n_chunks if owner_id is not None else pool
         semantic_hits = [
-            hit for hit in self.semantic.search(query, top_k=pool) if _is_accessible(hit.chunk, owner_id)
-        ]
+            hit for hit in self.semantic.search(query, top_k=fetch_k) if _is_accessible(hit.chunk, owner_id)
+        ][:pool]
         lexical_hits = [
-            hit for hit in self.lexical.search(query, top_k=pool) if _is_accessible(hit.chunk, owner_id)
-        ]
+            hit for hit in self.lexical.search(query, top_k=fetch_k) if _is_accessible(hit.chunk, owner_id)
+        ][:pool]
 
         semantic_norm = _normalize([hit.score for hit in semantic_hits])
         lexical_norm = _normalize([hit.score for hit in lexical_hits])
