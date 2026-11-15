@@ -18,6 +18,17 @@ Formato por entrada:
 
 ---
 
+
+## [2026-11-14] Fase 5 — reconciliación de dos implementaciones paralelas
+
+**Contexto**: Bianca y Mónica implementaron la Fase 5 en paralelo. Se conservó la de Mónica (`b593840`, ya en `origin/main`, SEC01-SEC07 verificados) y se portó solo lo que le faltaba; la otra versión quedó en la rama local `respaldo-fase5`.
+
+**Portado**: (1) tope explícito de 3 iteraciones del agente por afirmación (`MAX_AGENT_ITERATIONS`); (2) presupuesto de llamadas al LLM por corrida (`BudgetedClient`, 120) con resultados parciales si se agota; (3) `ExternalCallBudget` (10 llamadas externas por afirmación) como parámetro opcional de `search_metadata`; (4) validación estricta y escapado del DOI antes de armar la URL; (5) filtro `owner_id` aplicado ANTES de recortar al pool de candidatos (antes, chunks ajenos mejor rankeados podían dejar sin resultados al dueño legítimo). Tests en `tests/test_budgets.py` y `tests/test_hybrid.py`. 114 tests pasan.
+
+**No portado a propósito**: detección de `/JS`/`/Launch` en PDFs (Mónica documentó que `/JS` da falsos positivos en D12 y D15); módulos duplicados de inyección, dominios y logs.
+
+**Pendiente / decisión abierta**: con `owner_id=None` no se filtra nada (decisión de Mónica, con test): una consulta sin identidad puede ver chunks privados. El anteproyecto dice que los PDFs de usuario "solo se recuperan dentro de su sesión", lo que sugiere que sin `owner_id` solo deberían verse los públicos. Hay que decidirlo en equipo antes de exponer subida de PDFs en la interfaz.
+
 ## [2026-11-11] Fase 5 (Seguridad) implementada: SEC01-SEC07
 
 **Contexto**: el anteproyecto (sección 13) diseñaba 7 casos adversarios (SEC01-SEC07) con una tabla "Comportamiento esperado / Mitigación implementada", pero ningún control estaba implementado — era la única fase de código totalmente pendiente (ver STATUS.md). Se implementaron los 7, uno por uno, verificando cada uno con tests antes de seguir al siguiente (mismo método que el resto del proyecto).
