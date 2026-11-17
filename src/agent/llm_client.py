@@ -22,7 +22,7 @@ class LLMClient:
     ):
         self.base_url = (base_url or os.getenv("LLM_BASE_URL", DEFAULT_BASE_URL)).rstrip("/")
         self.api_key = api_key or os.getenv("LLM_API_KEY", "lm-studio")
-        self.timeout = timeout
+        self.timeout = int(os.getenv("LLM_TIMEOUT", timeout))
 
     def chat(
         self,
