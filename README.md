@@ -171,3 +171,12 @@ proveedor también soporte `response_format: json_schema` (ver `DECISIONS.md`).
 
 - Mónica Salvatierra (22249)
 - Bianca Calderón (22272)
+
+## Interfaz
+
+```bash
+conda activate evidentia
+streamlit run app/streamlit_app.py
+```
+
+Requiere el servidor de LM Studio activo (ver arriba) y el corpus en `data/processed/chunks.jsonl` (`python scripts/build_corpus.py`).

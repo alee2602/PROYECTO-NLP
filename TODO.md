@@ -89,6 +89,8 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 - [x] Topes de agente portados sobre la implementación de Mónica: 3 iteraciones por afirmación, 120 llamadas LLM por corrida, 10 llamadas externas por afirmación, validación de DOI, filtro `owner_id` antes del recorte (ver DECISIONS.md 2026-11-14)
 - [ ] Decidir en equipo si `owner_id=None` debe ocultar chunks privados (hoy no filtra nada)
 
+- [x] Interfaz Streamlit (`app/streamlit_app.py`, lógica en `app/helpers.py`): subir PDF (validación SEC06 + `owner_id` de sesión), analizar documento o verificar una afirmación suelta, resumen por nivel de evidencia, fuentes con el fragmento citado y JSON de salida. Correr con `streamlit run app/streamlit_app.py`. Probada de punta a punta con LM Studio (bonsai-27b, 222 fragmentos): verificar afirmación suelta y analizar D07 (2 afirmaciones, ambas suficiente) funcionan; tarda ~5 min por afirmación con este modelo.
+
 ## Fase 6 — Demostración y Defensa
 
 - [ ] Preparar guion de demo en vivo (15 min: 2 problema/usuario, 3 arquitectura, 4 demo, 3 métricas, 2 seguridad, 1 conclusiones)
