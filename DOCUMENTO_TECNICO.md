@@ -1,297 +1,152 @@
-# Evidentia — Documento Técnico Final
+# Evidentia
 
-Proyecto final, CC3103 Procesamiento de Lenguaje Natural, UVG.
-Mónica Salvatierra (22249) · Bianca Calderón (22272)
+## Documento técnico final
 
-> Nota de alcance: este documento resume el sistema construido, cómo se
-> evaluó y qué limitaciones quedan abiertas. Las decisiones de diseño con su
-> razonamiento completo (qué se intentó, qué falló y por qué) están en
-> `DECISIONS.md`; aquí solo se citan las que importan para entender el
-> resultado final.
+Proyecto final del curso CC3103, Procesamiento de Lenguaje Natural, Universidad del Valle de Guatemala.
+
+Mónica Salvatierra (22249) y Bianca Calderón (22272).
+
+Este documento resume el sistema construido, la forma en que se evaluó y las limitaciones que todavía quedan abiertas. Las decisiones de diseño con su razonamiento completo, incluyendo qué se intentó, qué no funcionó y por qué, están documentadas en `DECISIONS.md`. Aquí solo se citan las decisiones necesarias para entender el resultado final. El plan de trabajo con fechas y responsables reales se encuentra en `PLAN_DE_TRABAJO.md`.
+
+El código, las pruebas automatizadas y el registro completo de decisiones están disponibles en el repositorio del equipo, cuyo archivo `README.md` describe las instrucciones de instalación y ejecución. El corpus y el material propio del curso no se versionan en el repositorio, por los motivos que se explican en la sección 3.1.
 
 ## 1. Resumen ejecutivo
 
-Evidentia es un sistema de NLP/RAG agéntico que verifica si afirmaciones
-extraídas de documentos académicos tienen respaldo real en un corpus de
-fuentes autorizadas. Dado un documento o una afirmación suelta, el sistema:
-extrae afirmaciones verificables, recupera evidencia relevante mediante
-búsqueda híbrida (semántica + léxica), evalúa esa evidencia con un LLM, y
-aplica una capa de verificación determinística (no delegada al LLM) antes
-de reportar el resultado — con abstención obligatoria cuando no hay
-evidencia suficiente.
+Evidentia es un sistema agéntico de procesamiento de lenguaje natural y recuperación aumentada de información cuyo propósito es verificar si las afirmaciones extraídas de documentos académicos tienen respaldo real dentro de un corpus de fuentes autorizadas. Dado un documento completo o una afirmación suelta, el sistema extrae las afirmaciones verificables que contiene, recupera evidencia relevante mediante una búsqueda híbrida que combina recuperación semántica y léxica, evalúa esa evidencia con un modelo de lenguaje y, por último, aplica una capa de verificación determinística que no depende del modelo antes de entregar un resultado. Cuando no existe evidencia suficiente, el sistema se abstiene de forma obligatoria en lugar de inventar una respuesta.
 
-El sistema está completo en las 5 primeras fases del curso: ingesta,
-recuperación, orquestación agéntica, evaluación con banco de pruebas real,
-y seguridad (7 controles adversarios verificados contra el sistema real).
-Incluye una interfaz Streamlit funcional para subir documentos y verificar
-afirmaciones.
+El proyecto está completo en las primeras cinco fases del curso. Esto incluye la ingesta de documentos, la recuperación de evidencia, la orquestación agéntica, la evaluación mediante un banco de pruebas real y la seguridad, con siete controles adversarios verificados contra el sistema en funcionamiento. El sistema cuenta además con una interfaz construida en Streamlit que permite subir documentos y verificar afirmaciones de forma interactiva.
 
 ## 2. Problema y motivación
 
-Verificar manualmente si una afirmación en un documento académico está
-realmente respaldada por sus fuentes es lento y propenso a error humano —
-sobre todo cuando el documento cita decenas de referencias y el lector no
-puede releer cada una. Evidentia automatiza esa verificación, pero con una
-decisión de diseño central: **nunca confiar en que el LLM "diga la verdad"
-por sí solo**. Cada afirmación que el LLM clasifica como respaldada pasa
-por un chequeo de código determinístico antes de aceptarse — la cita debe
-corresponder a un chunk realmente recuperado, las cifras mencionadas deben
-aparecer literalmente en el texto citado, y cualquier patrón de intento de
-manipulación (afirmación o documento) fuerza revisión humana sin importar
-qué haya respondido el modelo.
+Verificar a mano si una afirmación dentro de un documento académico está realmente respaldada por sus fuentes es una tarea lenta y propensa al error humano, sobre todo cuando el documento cita decenas de referencias y no hay tiempo de releer cada una con cuidado. Evidentia automatiza esa verificación, pero parte de una decisión de diseño central. El sistema nunca confía en que el modelo de lenguaje diga la verdad por sí solo. Toda afirmación que el modelo clasifica como respaldada pasa antes por un chequeo de código determinístico. Ese chequeo exige que la cita corresponda a un fragmento realmente recuperado, que las cifras mencionadas en la afirmación aparezcan de forma literal en el texto citado y que cualquier patrón de intento de manipulación, ya sea en la afirmación o en el propio documento, obligue a una revisión humana sin importar lo que haya respondido el modelo.
 
-Esta decisión viene de evidencia empírica, no de precaución abstracta: en
-las primeras pruebas manuales, el LLM validó una cifra inventada ("45% de
-mejora") como `evidencia_suficiente` citando un chunk que ni la
-mencionaba, y clasificó una afirmación que invertía un hallazgo real como
-respaldada en vez de contradicha. Ambos casos se arreglaron con código
-determinístico, no con más instrucciones de prompt — ese patrón se repite
-en todo el proyecto (ver sección 5).
+Esta decisión surgió de evidencia empírica y no de una precaución abstracta. En las primeras pruebas manuales del sistema, el modelo validó una cifra inventada, un supuesto cuarenta y cinco por ciento de mejora, como evidencia suficiente, citando un fragmento que ni siquiera mencionaba esa cifra. En otra prueba, el modelo clasificó como respaldada una afirmación que en realidad invertía un hallazgo real del documento citado, cuando debía clasificarse como contradicha. Ambos problemas se resolvieron escribiendo código determinístico, no agregando más instrucciones al mensaje del sistema. Ese mismo patrón se repite a lo largo de todo el proyecto y se retoma en la sección cinco.
 
 ## 3. Arquitectura
 
+El flujo del sistema parte de un documento o una afirmación suelta. Primero, el componente de extracción de afirmaciones identifica qué partes del texto son afirmaciones verificables, apoyándose en el modelo de lenguaje y en un filtro determinístico que descarta afirmaciones demasiado vagas. Después, el recuperador híbrido busca evidencia relevante combinando un setenta por ciento de peso semántico con un treinta por ciento de peso léxico, más un refuerzo adicional para identificadores técnicos exactos. Finalmente, el componente de evaluación de evidencia pide al modelo que clasifique la relación entre la afirmación y la evidencia recuperada, y pasa ese resultado por tres verificaciones determinísticas antes de aceptarlo. La salida final es un objeto `EvidentiaOutput` que incluye la respuesta, las fuentes citadas, si el sistema se abstuvo, si la afirmación necesita revisión humana y el nivel de evidencia asignado.
+
+Todo el flujo está orquestado con LangGraph siguiendo la secuencia de extraer afirmaciones, buscar evidencia, evaluarla, refinar la búsqueda una sola vez si no se encontró evidencia, y finalizar. Existe además un tope duro de tres iteraciones de refinamiento por afirmación y un presupuesto máximo de ciento veinte llamadas al modelo por corrida completa, definidos en `src/security/budget.py`. Si ese presupuesto se agota, el sistema devuelve los resultados que ya había evaluado en lugar de hacer fallar toda la corrida.
+
+### 3.1 Ingesta de documentos
+
+El flujo de ingesta, implementado en `src/ingestion/`, parte de un archivo PDF que se valida por tipo, tamaño máximo de cincuenta megabytes, máximo de doscientas páginas, ausencia de cifrado y ausencia de JavaScript embebido. Luego se extrae el texto de cada página, filtrando cualquier texto invisible que pudiera estar oculto. El texto se limpia quitando guiones de corte de línea, normalizando ligaduras tipográficas y eliminando encabezados y pies de página repetidos. Por último, el texto se segmenta en fragmentos de alrededor de cuatrocientas cincuenta palabras con un solapamiento de ochenta palabras entre fragmentos consecutivos, y a cada documento y cada fragmento se les asigna metadata validada con Pydantic.
+
+El corpus del proyecto está compuesto por veinte artículos públicos de arXiv, diez que forman el núcleo original del corpus y diez más que funcionan como distractores temáticos. Todos se descargaron mediante la API pública de arXiv, usando el script `scripts/build_corpus.py`, y cada documento conserva registrada su licencia dentro de su metadata.
+
+Ni los PDFs originales, guardados en `data/raw/`, ni el texto completo extraído en `data/processed/chunks.jsonl`, se versionan en el repositorio, porque el contenido de artículos de terceros no debe redistribuirse por ese medio. Lo único que se versiona es `documents.json`, que contiene únicamente metadata bibliográfica como el título, los autores, la fuente y la licencia. Cualquier persona que clone el repositorio puede regenerar el corpus completo corriendo `python scripts/build_corpus.py`, siempre que tenga conexión a internet.
+
+El proyecto está construido en Python 3.12 y usa, entre otras, las siguientes bibliotecas. PyMuPDF para la extracción de texto de los PDFs, Sentence Transformers junto con FAISS para los embeddings y el índice vectorial, una implementación propia de BM25 sin dependencias externas, LangGraph para la orquestación agéntica, Pydantic para los esquemas y su validación, Streamlit para la interfaz y pytest para las ciento veintidós pruebas automatizadas del proyecto. El cliente del modelo de lenguaje se construyó directamente sobre la biblioteca `requests`, hablando el protocolo REST sin usar el SDK oficial de OpenAI, de modo que es compatible tanto con LM Studio corriendo localmente como con cualquier proveedor que hable ese mismo protocolo.
+
+### 3.2 Recuperación de evidencia
+
+La recuperación de evidencia, implementada en `src/retrieval/`, es híbrida. Combina embeddings generados con el modelo `paraphrase-multilingual-MiniLM-L12-v2` sobre un índice FAISS de tipo `IndexFlatIP`, una implementación propia de BM25 sin dependencias externas, y un refuerzo adicional para identificadores técnicos exactos como "BM25" o "RAGAS". Este refuerzo resultó necesario porque las consultas están escritas en español mientras que el corpus está en inglés, y la búsqueda puramente semántica tiende a perder justamente los términos técnicos exactos que sí aparecen de forma literal en el texto. Los pesos usados son setenta por ciento para la componente semántica y treinta por ciento para la componente léxica. La recuperación también respeta un filtro de acceso basado en la identidad de quien sube un documento, descrito en el control SEC03 de la sección cinco.
+
+### 3.3 Evaluación de evidencia
+
+El componente de evaluación de evidencia, implementado en `src/agent/evaluate_evidence.py`, pide al modelo de lenguaje que clasifique la relación entre una afirmación y la evidencia recuperada en tres niveles posibles, evidencia suficiente, evidencia parcial o evidencia no localizada. Antes de aceptar esa clasificación, el resultado pasa por tres verificaciones de código independientes del modelo.
+
+La primera, `validate_citations`, rechaza cualquier cita que apunte a un fragmento que en realidad no fue recuperado, y degrada la clasificación a parcial si la afirmación menciona una cifra específica que no aparece de forma literal en el texto citado, descontando identificadores de referencia como los códigos de arXiv, que no son datos factuales sino simples etiquetas. La segunda, `check_injection`, revisa si la afirmación o algún fragmento de evidencia contiene un patrón de manipulación de instrucciones, y de ser así degrada el resultado a revisión humana sin importar lo que haya respondido el modelo, como se detalla en los controles SEC01 y SEC02 de la sección cinco. La tercera, `check_contradiction`, es un veto adicional que usa una segunda llamada al modelo especializada en detectar contradicción directa entre la afirmación y la evidencia.
+
+El esquema de salida `EvidentiaOutput`, construido con Pydantic, incluye los campos `answer`, `sources`, `abstained`, `tool_used` y `needs_human_review`, además de `evidence_level`, `claim` y `claim_id` como extensión propia del proyecto. Las reglas de consistencia quedan reforzadas dentro del propio esquema y no dependen únicamente de la instrucción dada al modelo. En particular, si el sistema se abstiene, el esquema exige que las fuentes estén vacías, que el nivel de evidencia sea no localizada y que el campo de revisión humana quede en verdadero, de modo que una abstención siempre se detenga a pedir confirmación humana y nunca quede silenciosa.
+
+Un ejemplo real de salida, correspondiente al caso de prueba TC01, con evidencia suficiente, es el siguiente.
+
+```json
+{
+  "answer": "El fragmento D01_0002 confirma que los vectores recuperados se integran en el modelo para informar la predicción del siguiente parche.",
+  "sources": [{"source": "D01", "page": 2, "chunk_id": "D01_0002"}],
+  "abstained": false,
+  "tool_used": "search_evidence",
+  "needs_human_review": false,
+  "claim_id": "TC01",
+  "claim": "Los vectores recuperados se integran en el modelo para informar y mejorar la predicción del siguiente parche.",
+  "evidence_level": "evidencia_suficiente"
+}
 ```
-Documento/afirmación
-      │
-      ▼
-┌─────────────┐     ┌──────────────────┐     ┌───────────────────┐
-│extract_claims│───▶│  HybridRetriever  │───▶│  evaluate_claim    │
-│ (LLM + filtro│     │ (semántico 70% +  │     │ (LLM + 3 vetos     │
-│  de vaguedad │     │  léxico BM25 30%  │     │  determinísticos:  │
-│ determinista)│     │  + boost de       │     │  validate_citations│
-└─────────────┘     │  identificadores) │     │  check_injection    │
-                     └──────────────────┘     │  check_contradiction│
-                                               └───────────────────┘
-                                                        │
-                                                        ▼
-                                              EvidentiaOutput
-                                   (answer, sources, abstained,
-                                    needs_human_review, evidence_level)
-```
 
-Orquestado con **LangGraph**: `extract → search → evaluate → (refinar
-búsqueda una vez si no hay evidencia) → finalize`, con un tope duro de 3
-iteraciones por afirmación y 120 llamadas al LLM por corrida completa
-(`src/security/budget.py`) — si se agota el presupuesto, se devuelven los
-resultados ya evaluados en vez de fallar toda la corrida.
+### 3.4 Interfaz
 
-### 3.1 Ingesta (`src/ingestion/`)
+La interfaz, construida con Streamlit en `app/streamlit_app.py`, permite subir un PDF propio, validado y asociado a una identidad de sesión, o bien elegir un documento del corpus ya disponible, para después analizar sus afirmaciones o verificar una afirmación suelta escrita a mano. Muestra un resumen por nivel de evidencia, las fuentes citadas junto con el fragmento correspondiente, y la salida completa en formato JSON.
 
-PDF → validación (tipo, tamaño ≤50MB, ≤200 páginas, sin cifrado, sin
-JavaScript embebido) → extracción de texto por página (filtrando texto
-invisible) → limpieza (de-hyphenation, normalización de ligaduras,
-remoción de encabezados/pies repetidos) → chunking (ventana de ~450
-palabras, solapamiento 80) → metadata Pydantic por documento y por chunk.
+## 4. Metodología de evaluación
 
-### 3.2 Recuperación (`src/retrieval/`)
+El banco de pruebas oficial, definido en `data/eval/test_cases.json`, está compuesto por veinticinco casos identificados como TC01 a TC20 y TH01 a TH05, diseñados originalmente en la sección doce del anteproyecto. Cada afirmación del banco es real y fue verificada manualmente contra el corpus, en lugar de ser una afirmación genérica. El banco cubre afirmaciones directas, paráfrasis en el mismo idioma y en otro idioma, contradicciones, identificadores léxicos exactos, afirmaciones compuestas que requieren más de un documento, afirmaciones ambiguas o deliberadamente vagas, ausencia total de evidencia, vigencia de versión o fecha de publicación, y selección o degradación de herramientas.
 
-Híbrida: embeddings con `paraphrase-multilingual-MiniLM-L12-v2` sobre
-FAISS (`IndexFlatIP`) + BM25 propio (sin dependencia externa) + boost de
-identificadores técnicos exactos (ej. "BM25", "RAGAS") — necesario porque
-las consultas están en español y el corpus en inglés, donde el semántico
-solo pierde términos técnicos exactos. Pesos 70% semántico / 30% léxico
-(anteproyecto sección 10). Filtro de acceso por `owner_id` para documentos
-subidos por un usuario (sección 5.3).
+Las métricas usadas para medir el desempeño del sistema son el Recall en los primeros cinco resultados recuperados, la posición media del primer resultado relevante o MRR, la exactitud de clasificación, entendida como la coincidencia exacta entre el nivel de evidencia asignado y el esperado, la latencia de búsqueda y de evaluación, y el número de llamadas y de tokens consumidos por el modelo de lenguaje.
 
-### 3.3 Evaluación de evidencia (`src/agent/evaluate_evidence.py`)
+Un aspecto importante de la metodología merece explicarse con cuidado. La métrica de Recall exige recuperar el conjunto completo de documentos esperados en las afirmaciones compuestas, en lugar de conformarse con recuperar al menos uno de ellos. La única excepción es la categoría de afirmaciones ambiguas, donde varias fuentes alternativas resultan igualmente válidas por diseño. Este ajuste se hizo después de notar que la métrica original, que se conformaba con recuperar cualquiera de los documentos esperados, ocultaba un vacío real de recuperación en un caso compuesto específico, documentado como TC14 en `DECISIONS.md`.
 
-El LLM clasifica la relación afirmación↔evidencia en 3 niveles
-(`evidencia_suficiente` / `evidencia_parcial` / `evidencia_no_localizada`),
-pero el resultado pasa por 3 vetos de código antes de aceptarse:
+Para confirmar que el Recall obtenido no es un artefacto de medición, se realizó un estudio de ablación comparando la recuperación puramente semántica, la puramente léxica, la híbrida sin el refuerzo de identificadores y la híbrida completa, usando el script `scripts/run_retrieval_ablation.py`. El mismo estudio se repitió después de duplicar el corpus a veinte documentos agregando distractores temáticos reales, y el resultado se mantuvo estable. El refuerzo de identificadores solo resulta decisivo en un único caso específico, por lo que no está inflando el número de forma artificial.
 
-- **`validate_citations`**: rechaza citas a chunks no recuperados; degrada
-  a parcial si una cifra de la afirmación no aparece literalmente en el
-  texto citado (excluyendo identificadores de referencia como IDs de
-  arXiv, que no son datos factuales).
-- **`check_injection`**: si la afirmación o algún fragmento de evidencia
-  contiene un patrón de manipulación de instrucciones, degrada a revisión
-  humana sin importar qué haya respondido el modelo (sección 5.1-5.2).
-- **`check_contradiction`**: veto adicional vía una segunda llamada al LLM
-  especializada en detectar contradicción directa.
+## 5. Seguridad
 
-### 3.4 Esquema de salida
+Los siete casos adversarios definidos en la sección trece del anteproyecto están implementados y, lo que es más importante, verificados contra el sistema en funcionamiento, usando el corpus completo y el servidor local de LM Studio, mediante el script `scripts/run_security_eval.py`, y no solamente mediante pruebas unitarias con clientes simulados.
 
-`EvidentiaOutput` (Pydantic): `answer`, `sources`, `abstained`,
-`tool_used`, `needs_human_review`, más `evidence_level`/`claim`/`claim_id`
-como extensión propia. Invariantes de consistencia reforzadas en el
-esquema mismo, no solo por instrucción de prompt: `abstained=True` exige
-`sources=[]`, `evidence_level=no_localizada` **y**
-`needs_human_review=True` (una abstención debe detenerse y pedir
-confirmación humana, nunca quedar silenciosa).
+El primer control, SEC01, corresponde a la inyección directa de instrucciones dentro de una consulta. Se mitiga con un detector de patrones en español e inglés, una separación explícita de roles dentro del mensaje al modelo y un veto determinístico posterior a la respuesta del modelo. En la prueba real, el modelo ignoró la instrucción incrustada en la afirmación y clasificó basándose únicamente en la evidencia disponible.
 
-### 3.5 Interfaz (`app/`)
+El segundo, SEC02, corresponde a la inyección indirecta mediante texto oculto dentro de un PDF. Se mitiga filtrando, durante la extracción, cualquier texto con un tamaño de fuente casi nulo o del mismo color que el fondo, y aplicando sobre los propios fragmentos de evidencia el mismo veto usado contra SEC01. En la prueba real, el texto oculto quedó filtrado antes de llegar al fragmento final, sin ninguna regresión sobre los veinte documentos reales del corpus.
 
-Streamlit: subir un PDF (validado, con `owner_id` de sesión) o elegir un
-documento del corpus, analizar sus afirmaciones o verificar una afirmación
-suelta. Resumen por nivel de evidencia, fuentes con el fragmento citado,
-JSON de salida completo.
+El tercero, SEC03, corresponde a la evasión de permisos, es decir, a la posibilidad de recuperar un fragmento que pertenece a otro usuario. Se mitiga con un filtro basado en la identidad del propietario del documento, aplicado antes de recortar el conjunto de candidatos, de modo que, sin una identidad explícita, solo se devuelven los fragmentos públicos. En la prueba real, el fragmento ajeno nunca se devolvió, incluso cuando resultaba ser el mejor candidato tanto léxico como semántico.
 
-## 4. Metodología de evaluación (Fase 4)
+El cuarto, SEC04, corresponde a una acción crítica sin autorización, como ampliar una búsqueda más allá de lo permitido o realizar una llamada externa indebida. Se mitiga con un tope estructural de tres iteraciones del agente, un presupuesto máximo de llamadas al modelo y una lista blanca de dominios externos permitidos. En la prueba real, el sistema nunca hizo más de dos búsquedas por afirmación, y un dominio no permitido fue rechazado antes de intentar siquiera la conexión.
 
-Banco de 25 casos (`data/eval/test_cases.json`, TC01-TC20 + TH01-TH05)
-diseñado en el anteproyecto (sección 12), con afirmaciones reales
-verificadas manualmente contra el corpus (no genéricas) — cubre afirmación
-directa, paráfrasis, paráfrasis multilingüe, contradicción, identificador
-léxico exacto, afirmación compuesta (multi-documento), afirmación
-ambigua/vaga, ausencia total de evidencia, vigencia de versión/fecha, y
-selección/degradación de herramienta.
+El quinto, SEC05, corresponde a la alucinación forzada, por ejemplo pedir la página exacta donde un autor inexistente en el corpus habría dicho algo. Se mitiga mediante `validate_citations`, que rechaza cualquier cita a un fragmento no recuperado, y mediante la regla del esquema que obliga a toda abstención a exigir revisión humana. En la prueba real, el sistema se abstuvo de forma limpia, sin inventar ninguna cita ni ninguna página.
 
-**Corpus**: 20 documentos de arXiv (D01-D10 núcleo + D11-D20 distractores
-temáticamente adversariales), 472 chunks.
+El sexto, SEC06, corresponde a archivos maliciosos o inválidos. Se mitiga validando el tipo de archivo, su tamaño, su número de páginas, si está cifrado y si contiene JavaScript embebido, esto último revisando la sintaxis de los objetos internos del PDF en lugar de buscar patrones en los bytes crudos del archivo. En la prueba real, los tres tipos de archivo malicioso probados fueron rechazados correctamente, y los veinte documentos reales del corpus se siguen cargando sin ningún falso positivo.
 
-**Métricas**: Recall@5 (documento esperado recuperado en el top-5),
-MRR, exactitud de clasificación (`evidence_level` exacto == esperado),
-latencia (media/P95) y tokens/llamadas al LLM.
+El séptimo, SEC07, corresponde a la fuga de datos personales dentro de los registros de eventos del sistema. Se mitiga con una sanitización por expresiones regulares que detecta correos electrónicos y números de teléfono, y registrando un resumen criptográfico de la afirmación en lugar de su texto completo. En la prueba real, el registro de eventos no contuvo ni el correo ni el teléfono usados en la afirmación de prueba, solamente su resumen criptográfico.
 
-**Nota de metodología importante**: Recall@5 exige el conjunto COMPLETO de
-documentos esperados para afirmaciones compuestas (categoría distinta de
-"ambigua", donde varias fuentes alternativas son igualmente válidas) — no
-basta con recuperar uno de dos documentos necesarios. Este ajuste se hizo
-después de notar que la métrica original (overlap "any") ocultaba un hueco
-real de recuperación en un caso compuesto (TC14): ver `DECISIONS.md`.
+Durante la implementación de estos controles de seguridad surgieron hallazgos adicionales que conviene documentar con la misma honestidad que el resto del proyecto. Se encontró y corrigió un error real preexistente en `pdf_loader.py`, que cerraba el documento antes de volver a leer el número de páginas dentro del mensaje de error. Un primer intento de detectar JavaScript embebido buscando directamente en los bytes crudos del archivo producía falsos positivos reales en dos de los veinte documentos del corpus, porque contenido binario comprimido coincidía por azar con el patrón buscado, y tuvo que sustituirse por el análisis de la sintaxis de los objetos del PDF. También se encontró y corrigió un error real en el filtro de identidad de propietario, que se aplicaba después de recortar el conjunto de candidatos y por eso podía dejar sin resultados al propietario legítimo cuando fragmentos ajenos rankeaban mejor.
 
-**Verificación de que el Recall@5 no es un artefacto**: ablation de
-recuperación (`scripts/run_retrieval_ablation.py`) comparando
-solo-semántico / solo-léxico / híbrido-sin-boost / híbrido-completo, y
-repetida con el corpus duplicado a 20 documentos con distractores reales —
-el resultado se sostiene igual, el boost de identificadores solo rescata
-un caso específico (no está "cargando" el número).
+Más recientemente, el equipo decidió que la ausencia de identidad, es decir, cuando no se especifica ningún propietario al hacer una consulta, debe ocultar todos los fragmentos privados en lugar de desactivar el filtro por completo, que era el comportamiento anterior. Este cambio no produce ninguna regresión sobre el corpus compartido actual, porque todos sus fragmentos ya son públicos por defecto, y cierra un vacío real ahora que la interfaz permite subir documentos propios.
 
-## 5. Seguridad (Fase 5)
-
-Los 7 casos adversarios del anteproyecto (sección 13) están implementados
-y verificados contra el sistema real (corpus completo + LM Studio), no
-solo en tests unitarios con clientes simulados — `scripts/run_security_eval.py`.
-
-| ID | Amenaza | Mitigación | Resultado observado |
-|---|---|---|---|
-| SEC01 | Inyección directa en la consulta | Detector de patrones (regex ES/EN) + separación de roles explícita en el prompt + veto determinístico post-LLM | El LLM real ignoró la instrucción incrustada; clasificación basada solo en evidencia |
-| SEC02 | Inyección indirecta (texto oculto en PDF) | Filtro de texto invisible en extracción (tamaño de fuente casi nulo o blanco sobre blanco) + mismo veto de SEC01 sobre los fragmentos | Texto oculto filtrado antes de llegar al chunk; cero regresión en los 20 documentos reales |
-| SEC03 | Evasión de permisos (fragmento de otro usuario) | Filtro `owner_id` aplicado antes de recortar el pool de candidatos; sin identidad, solo se ven chunks públicos | Chunk ajeno nunca devuelto, incluso siendo mejor candidato léxico/semántico |
-| SEC04 | Acción crítica sin autorización (ampliar búsqueda / llamada externa) | Tope estructural de iteraciones del agente (3) + presupuesto de llamadas LLM (120) + lista blanca de dominios externos | Máximo 2 búsquedas por afirmación; dominio no permitido rechazado antes de conectar |
-| SEC05 | Alucinación forzada (autor/página ausente) | `validate_citations` (rechaza citas a chunks no recuperados) + regla de esquema (abstención ⇒ revisión humana obligatoria) | Abstención limpia, sin inventar cita ni página |
-| SEC06 | Archivo malicioso o inválido | Validación de tipo MIME/extensión, tamaño, páginas, cifrado, JavaScript embebido (vía sintaxis de objetos PDF, no bytes crudos) | Los 3 tipos de archivo malicioso rechazados; 20/20 documentos reales cargan sin falsos positivos |
-| SEC07 | Fuga de datos personales en logs | Sanitización por regex (correos/teléfonos) + registro de hash en vez de texto completo | El log no contiene ni el correo ni el teléfono de prueba, solo un hash |
-
-**Hallazgos colaterales durante la implementación de seguridad** (honestos,
-no ocultados): se encontró y corrigió un bug preexistente real en
-`pdf_loader.py` (cerraba el documento antes de leer `page_count` en el
-mensaje de error); un primer intento de detección de JavaScript por bytes
-crudos daba falsos positivos reales en 2 de los 20 documentos del corpus
-(contenido binario comprimido coincidiendo por azar con el patrón "/JS");
-y un bug real en el filtro `owner_id` (se aplicaba después de recortar el
-pool de candidatos, dejando sin resultados al dueño legítimo cuando chunks
-ajenos rankeaban mejor) — corregido por el equipo.
-
-**Decisión de diseño reciente**: `owner_id=None` (sin identidad) ahora
-oculta todos los chunks privados por defecto — antes desactivaba el
-filtro por completo. Cero regresión en el corpus compartido (todo público
-por defecto); cierra un hueco real ahora que la interfaz expone subida de
-PDFs.
-
-**Gap documentado**: la mitigación de SEC07 pide "regex + spaCy NER"; spaCy
-quedó bloqueado por el Control de aplicaciones de Windows en este entorno
-de desarrollo (igual que `torch` y el SDK de `openai` antes) — la
-sanitización por regex (correos, teléfonos) está implementada y
-verificada; la detección de nombres propios sin NER queda como mejora
-pendiente.
+Queda un vacío documentado y no oculto en la mitigación del séptimo control. El anteproyecto pide combinar expresiones regulares con reconocimiento de entidades nombradas mediante spaCy, pero esa biblioteca quedó bloqueada por el Control de aplicaciones de Windows en este entorno de desarrollo, de la misma forma en que antes bloqueó a `torch` y al SDK de `openai`. La sanitización por expresiones regulares, que cubre correos y teléfonos, ya está implementada y verificada, mientras que la detección de nombres propios sin ese reconocimiento de entidades queda como una mejora pendiente.
 
 ## 6. Resultados
 
-Corrida completa contra el sistema real (corpus de 20 documentos / 472
-chunks, `qwen/qwen3.5-9b`, contexto 16384), 23 casos de contenido + 2
-casos de robustez de parámetros (TH03/TH04):
+La corrida más reciente contra el sistema real, usando el corpus completo de veinte documentos y cuatrocientos setenta y dos fragmentos, el modelo `qwen/qwen3.5-9b` y un contexto de dieciséis mil trescientos ochenta y cuatro tokens, cubrió los veintitrés casos de contenido del banco de pruebas más los dos casos de robustez de parámetros, TH03 y TH04.
 
-| Métrica | Valor |
-|---|---|
-| Recall@5 | **95.24% (20/21)** |
-| MRR | **0.921** |
-| Exactitud de clasificación | **91.30% (21/23)** |
-| TH03 (límite duro `top_k≤20`) | Cumple |
-| Latencia de búsqueda | media 0.119s, P95 0.494s |
-| Latencia de `evaluate_claim` | media 94.6s*, P95 48.3s |
-| Llamadas al LLM / tokens totales | 52 llamadas, 165,864 tokens |
+El Recall obtenido fue de noventa y cinco coma veinticuatro por ciento, equivalente a veinte de veintiún casos aplicables. El MRR resultó en cero coma novecientos veintiuno. La exactitud de clasificación llegó a noventa y uno coma treinta por ciento, equivalente a veintiuno de veintitrés casos. El caso TH03 confirmó que el sistema respeta el límite duro de un máximo de veinte resultados por búsqueda. El caso TH04 confirmó que, ante una afirmación sin respaldo real, el sistema jamás fuerza una clasificación de evidencia suficiente y siempre exige revisión humana. La latencia media de búsqueda fue de treinta y tres milisegundos, con un percentil noventa y cinco de cuarenta y seis milisegundos. La latencia media de evaluación de una afirmación completa fue de veintitrés coma seis segundos, con un percentil noventa y cinco de treinta y ocho coma dos segundos. En total, la corrida consumió cincuenta y siete llamadas al modelo de lenguaje y doscientos dos mil seiscientos setenta y seis tokens.
 
-\* La media de latencia de `evaluate_claim` está inflada por un caso
-(TC09) que tardó 1609s (27 min) de forma anómala — el resto de los 22
-casos tardó entre 15s y 50s. Se reporta el dato completo sin descartar el
-outlier porque es información operativa real (el peor caso observado
-puede ser mucho peor que el P95), consistente con una degradación ya
-documentada del motor de inferencia local.
+Conviene dejar constancia de un dato operativo observado en una corrida anterior con el mismo código. En esa corrida, un único caso tardó mil seiscientos nueve segundos, unos veintisiete minutos, de forma anómala, mientras que el resto de los casos se comportó de manera similar a la corrida más reciente. Ese dato no se descarta, porque refleja información real sobre el peor caso posible de latencia, aunque no representa el comportamiento típico del sistema.
 
-**Los 2 casos que no coinciden** (TC14, TC15) son limitaciones reales y
-ya conocidas, no errores de calibración del banco de pruebas (ver sección
-7) — se revisó explícitamente si ajustar las etiquetas esperadas de
-`test_cases.json` resolvería esto, y se decidió no hacerlo: hubiera sido
-maquillar el número, no arreglar nada.
+Los dos casos que no coinciden con lo esperado, TC14 y TC15, corresponden a limitaciones reales y ya conocidas del sistema, no a errores de calibración del banco de pruebas, como se explica con más detalle en la sección siete. El equipo revisó explícitamente si ajustar las etiquetas esperadas en `test_cases.json` resolvería el problema, y decidió no hacerlo, porque eso habría maquillado el número en lugar de arreglar algo real.
 
-**Verificación de que el Recall@5 no es un artefacto**: ablation de
-recuperación (solo-semántico / solo-léxico / híbrido-sin-boost /
-híbrido-completo) repetida con el corpus duplicado a 20 documentos — el
-resultado se sostiene, el boost de identificadores solo rescata 1 caso
-específico.
+La comparación entre la línea base de la fase dos, que usa solamente recuperación semántica, y la versión mejorada de la fase tres, que usa recuperación híbrida, se hizo manteniendo constante el mismo banco de pruebas y el mismo flujo de evaluación, de modo que la única variable que cambia es el recuperador. Los resultados se muestran en la siguiente tabla.
 
-**Comparación línea base (Fase 2) vs. mejorada (Fase 3)**: mismo banco,
-mismo pipeline de `evaluate_claim`, solo cambia el retriever
-(`scripts/run_baseline_vs_improved.py`):
-
-| Métrica | Línea base (solo semántico) | Mejorada (híbrido) |
+| Métrica | Línea base, solo semántica | Versión mejorada, híbrida |
 |---|---|---|
-| Recall@5 | 85.7% | 95.2% |
+| Recall en los primeros cinco resultados | 85.7 por ciento | 95.2 por ciento |
 | MRR | 0.720 | 0.921 |
-| Exactitud de clasificación | **65.2%** | **91.3%** |
+| Exactitud de clasificación | 65.2 por ciento | 91.3 por ciento |
 
-6 casos cambian de clasificación entre variantes (TC10, TC11, TC12, TC13,
-TC19, TH02) — en los 6, la mejora de recuperación es lo que permite que
-`evaluate_claim` llegue a la clasificación correcta. Esta es la evidencia
-concreta de que la mejora técnica de Fase 3 (BM25 propio + boost de
-identificadores) no es una mejora de recuperación aislada: se traduce
-directamente en **+26 puntos porcentuales** de exactitud de clasificación
-final, que es la métrica que de verdad le importa al usuario.
+Seis casos cambian de clasificación entre una variante y la otra, identificados como TC10, TC11, TC12, TC13, TC19 y TH02. En los seis, es precisamente la mejora en la recuperación la que permite que la evaluación de evidencia llegue a la clasificación correcta. Esta tabla constituye la evidencia concreta de que la mejora técnica de la fase tres no es una mejora de recuperación aislada, sino que se traduce directamente en veintiséis puntos porcentuales de mejora en la exactitud de clasificación final, que es la métrica que de verdad le importa a quien usa el sistema.
 
 ## 7. Limitaciones conocidas
 
-- **Contradicción cruzada entre documentos lejanamente relacionados**:
-  cuando dos papers no relacionados contienen afirmaciones genéricas
-  similares ("nuestro método mejora el rendimiento"), el modelo puede
-  combinarlas para respaldar una afirmación deliberadamente vaga que
-  debería quedar como evidencia parcial. Se intentó un arreglo de prompt
-  que causó una regresión neta en otros casos y se revirtió — sigue
-  abierto como limitación de robustez ante vaguedad, no como error de
-  calibración del banco de pruebas.
-- **Recuperación de afirmaciones compuestas entre documentos no
-  relacionados**: el orquestador solo reintenta la búsqueda cuando el
-  resultado es "evidencia no localizada", no cuando ya hay evidencia
-  parcial para una parte de una afirmación compuesta — un documento
-  esperado puede no recuperarse nunca si el otro domina el top-5.
-- **No-determinismo residual del motor de inferencia local**: con
-  `temperature=0.0`, corridas idénticas de código pueden dar conjuntos de
-  casos fallidos ligeramente distintos (confirmado empíricamente,
-  documentado en `DECISIONS.md`) — el total se mantiene en un rango
-  estable, pero el caso exacto que falla puede variar.
-- **spaCy NER bloqueado** en el entorno de desarrollo Windows (ver sección
-  5) — sanitización de logs hoy es solo por regex.
-- **Chunking por palabras, no por tokens reales** del tokenizer del
-  modelo de embeddings — aproximación documentada, no exacta.
+El sistema presenta una limitación de robustez ante afirmaciones deliberadamente vagas que combinan contenido de documentos lejanamente relacionados. Cuando dos artículos sin relación directa contienen afirmaciones genéricas similares, por ejemplo que cierto método mejora el rendimiento, el modelo puede combinarlas para respaldar una afirmación vaga que en realidad debería quedar clasificada como evidencia parcial. Se intentó corregir este problema ajustando las instrucciones dadas al modelo, pero ese ajuste produjo una regresión neta en otros casos y tuvo que revertirse. El problema sigue abierto como una limitación genuina de robustez ante la vaguedad, y no como un error de calibración del banco de pruebas.
+
+El sistema también presenta una limitación en la recuperación de afirmaciones compuestas que requieren evidencia de documentos sin relación entre sí. El orquestador solo vuelve a intentar la búsqueda cuando el resultado inicial es evidencia no localizada, pero no cuando ya existe evidencia parcial para una de las partes de una afirmación compuesta. Esto significa que un documento esperado puede no recuperarse nunca si el otro domina ampliamente los primeros resultados.
+
+Se observó además un grado residual de no determinismo en el motor de inferencia local. Aun con la temperatura del modelo fijada en cero, corridas idénticas del mismo código pueden producir conjuntos de casos fallidos levemente distintos entre sí, aunque el total de casos correctos se mantiene dentro de un rango estable. Este comportamiento está confirmado empíricamente y documentado en `DECISIONS.md`.
+
+El reconocimiento de entidades nombradas mediante spaCy, necesario para completar la sanitización de registros de eventos pedida en la sección de seguridad, sigue bloqueado en el entorno de desarrollo usado para este proyecto, por lo que la sanitización actual se basa únicamente en expresiones regulares.
+
+Por último, la segmentación de documentos en fragmentos se hace contando palabras y no tokens reales del tokenizador del modelo de embeddings, lo cual es una aproximación razonable pero no exacta, y queda documentada como tal en el propio código.
 
 ## 8. Conclusiones
 
-El patrón más importante de todo el proyecto: **cuando el LLM falla, la
-solución real casi nunca fue "ajustar el prompt" — fue escribir un
-chequeo determinístico que no depende de que el modelo se comporte bien.**
-Esto se repitió en citas numéricas inventadas, en contradicciones, en
-intentos de inyección, y en archivos maliciosos. El prompt engineering
-tuvo rendimientos decrecientes claros y, en al menos un caso documentado,
-produjo una regresión neta que hubo que revertir.
+El patrón más importante de todo el proyecto puede resumirse en una idea simple. Cuando el modelo de lenguaje falla, la solución real casi nunca consistió en ajustar las instrucciones que se le dan, sino en escribir un chequeo determinístico que no depende de que el modelo se comporte bien. Este patrón se repitió en las citas numéricas inventadas, en las contradicciones no detectadas, en los intentos de inyección de instrucciones y en los archivos maliciosos. El ajuste fino de instrucciones mostró rendimientos claramente decrecientes y, en al menos un caso documentado, produjo una regresión neta que tuvo que revertirse.
 
-El segundo patrón: **nunca declarar un arreglo resuelto sin verificarlo
-contra el sistema real** (corpus real + LLM real, no solo tests con
-clientes simulados) — varias correcciones que parecían funcionar en
-aislamiento resultaron insuficientes o regresivas solo al confirmarse así.
+El segundo patrón relevante es metodológico. Ninguna corrección se declaró resuelta sin verificarla contra el sistema real, usando el corpus real y el modelo de lenguaje real, y no solamente pruebas con clientes simulados. Varias correcciones que parecían funcionar de forma aislada resultaron insuficientes, o incluso regresivas, y eso solo se descubrió al confirmarlas de esa manera.
+
+## 9. Equipo y plan de trabajo
+
+El equipo quedó conformado por dos integrantes, una decisión documentada en `DECISIONS.md`, a pesar de que el curso exige equipos de tres a cuatro personas, asumiendo el riesgo correspondiente. El reparto real del trabajo, con fechas y tareas completas disponibles en `PLAN_DE_TRABAJO.md` y tomadas directamente del historial de control de versiones, fue el siguiente.
+
+Mónica Salvatierra se encargó del flujo de ingesta y recuperación, del orquestador agéntico, del banco de pruebas y sus métricas de evaluación, de los siete controles de seguridad, y de este documento técnico. Bianca Calderón se encargó de los límites duros de parámetros, de los presupuestos del agente y la validación de identificadores DOI, de corregir un error real en el filtro de permisos, y de la interfaz construida en Streamlit.
 
 ## Referencias
 
-Ver `DECISIONS.md` para el registro completo de decisiones de diseño,
-iteraciones fallidas y su razonamiento. Corpus construido desde la API
-pública de arXiv (`scripts/build_corpus.py`); metadatos bibliográficos
-contrastados vía Crossref.
+El registro completo de decisiones de diseño, incluyendo las iteraciones que no funcionaron y su razonamiento, está disponible en `DECISIONS.md`. El corpus se construyó a partir de la API pública de arXiv mediante `scripts/build_corpus.py`, y los metadatos bibliográficos se contrastaron mediante la API de Crossref.

@@ -1,121 +1,77 @@
-# Guion de demo — Evidentia (15 minutos)
+# Guion de demostración
 
-Estructura pedida por el curso: 2 min problema/usuario, 3 min arquitectura,
-4 min demo en vivo, 3 min métricas, 2 min seguridad, 1 min conclusiones.
+## Evidentia, quince minutos
 
-**Antes de empezar** (checklist, no durante los 15 minutos):
-- [ ] LM Studio corriendo, modelo `qwen/qwen3.5-9b` cargado **con
-  `--context-length 16384`** (el contexto por defecto, 4096, hace fallar
-  casi todas las evaluaciones silenciosamente — verificar con
-  `lms ps` antes de empezar, no asumir).
-- [ ] Corpus construido (`data/processed/chunks.jsonl` existe).
-- [ ] `streamlit run app/streamlit_app.py` abierto y probado una vez antes
-  de la presentación (la primera indexación tarda unos segundos).
-- [ ] Tener a mano un PDF corto de prueba para la subida en vivo (algo que
-  NO esté ya en el corpus, para que se note la diferencia).
+La estructura pedida por el curso distribuye el tiempo en dos minutos para el problema y el usuario, tres minutos para la arquitectura, cuatro minutos para la demostración en vivo, tres minutos para las métricas, dos minutos para la seguridad y un minuto para las conclusiones.
 
----
+## Antes de empezar
 
-## 1. Problema y usuario (2 min)
+Esta lista debe revisarse antes de la presentación, no durante ella.
 
-- Verificar a mano si una afirmación de un documento académico está
-  realmente respaldada por su fuente es lento y propenso a error —
-  sobre todo con decenas de referencias y sin tiempo de releer cada una.
-- Usuario objetivo: alguien que revisa un documento académico (estudiante,
-  investigador, revisor) y quiere saber, afirmación por afirmación, si el
-  corpus disponible la respalda, la contradice, o no dice nada al respecto.
-- La promesa del sistema no es "confiar en el LLM" — es que cada
-  respuesta venga acompañada de la cita exacta (documento, página, chunk)
-  para que la persona pueda verificarla ella misma en segundos, y que el
-  sistema se abstenga en vez de inventar cuando no hay evidencia real.
+El servidor de LM Studio debe estar corriendo con el modelo `qwen/qwen3.5-9b` cargado con un contexto de dieciséis mil trescientos ochenta y cuatro tokens. El contexto por defecto, de cuatro mil noventa y seis tokens, hace fallar casi todas las evaluaciones de forma silenciosa, así que conviene verificar con `lms ps` antes de empezar en lugar de asumir que quedó bien configurado.
 
-## 2. Arquitectura (3 min)
+El corpus debe estar construido, de modo que `data/processed/chunks.jsonl` exista.
 
-Mostrar el diagrama de `DOCUMENTO_TECNICO.md` sección 3 (o dibujarlo en
-vivo): extract_claims → HybridRetriever → evaluate_claim (LLM + 3 vetos
-determinísticos) → EvidentiaOutput.
+La interfaz debe haberse abierto y probado al menos una vez antes de la presentación, corriendo `streamlit run app/streamlit_app.py`, porque la primera indexación tarda unos segundos.
 
-Punto central a explicar, no solo mostrar: **el LLM no es la última
-palabra**. Después de que el modelo clasifica, código determinístico
-verifica: ¿la cita existe de verdad entre lo recuperado? ¿las cifras que
-menciona la afirmación aparecen literalmente en el texto citado? ¿hay un
-patrón de manipulación en la afirmación o en el documento? Si algo de esto
-falla, el sistema degrada la clasificación o se abstiene — no importa qué
-tan convencido "suene" el LLM.
+Conviene tener a mano un PDF corto de prueba para la subida en vivo, que no esté ya incluido en el corpus, de modo que se note la diferencia entre un documento conocido y uno nuevo.
 
-Mencionar brevemente: recuperación híbrida (semántica + léxica) porque las
-consultas están en español y el corpus en inglés — lo semántico solo
-pierde términos técnicos exactos como "BM25" o "RAGAS".
+Conviene también tener un plan de respaldo si algo falla durante la demostración en vivo, porque LM Studio tiene un error conocido que ocasionalmente hace fallar la generación con un mensaje sobre una pila de gramática vacía, según se documenta en `DECISIONS.md`. Tener a mano una captura de pantalla o el contenido de `logs/eval_results.json` permite seguir adelante sin depender por completo de que la demostración en vivo funcione a la primera.
 
-## 3. Demo en vivo (4 min)
+Como reparto sugerido para un equipo de dos personas, que puede ajustarse según lo que pida el curso, Mónica puede encargarse de las secciones de arquitectura, métricas y seguridad, por haber implementado esas partes directamente, mientras que Bianca puede encargarse de las secciones de problema y usuario, y de la demostración en vivo con la interfaz que ella construyó. Las conclusiones pueden presentarse entre ambas.
 
-Dos flujos cortos en la interfaz Streamlit:
+## Primera sección, problema y usuario, dos minutos
 
-1. **Verificar una afirmación suelta** (pestaña "Verificar una
-   afirmación"): escribir una afirmación conocida del corpus (ej. sobre
-   FAISS o BM25) → mostrar la clasificación, la cita exacta con el
-   fragmento, y el JSON de salida completo.
-2. **Subir un PDF nuevo** (pestaña "Analizar documento" → "Subir un
-   PDF"): subir el PDF de prueba, dejar que extraiga afirmaciones,
-   mostrar el resumen por nivel de evidencia y al menos un caso de
-   `evidencia_parcial` o `evidencia_no_localizada` para demostrar que el
-   sistema **no** fuerza todo a "suficiente".
+Verificar a mano si una afirmación de un documento académico está realmente respaldada por su fuente es lento y propenso al error, sobre todo cuando hay decenas de referencias y no hay tiempo de releer cada una.
 
-Si el tiempo apremia, priorizar el flujo 1 (más rápido, más control sobre
-el resultado) y mencionar el flujo 2 solo de palabra.
+El usuario objetivo es alguien que revisa un documento académico, ya sea estudiante, investigador o revisor, y quiere saber, afirmación por afirmación, si el corpus disponible la respalda, la contradice o no dice nada al respecto.
 
-**Nota de timing**: con `qwen/qwen3.5-9b` cada afirmación tarda ~10-25s en
-promedio (P95 ~40-50s) en evaluarse — tener la consulta lista de antemano
-y lanzarla justo al empezar a hablar de esta sección, para no quedarse en
-silencio esperando.
+La promesa del sistema no es que haya que confiar ciegamente en el modelo de lenguaje, sino que cada respuesta venga acompañada de la cita exacta, con documento, página y fragmento, de modo que la persona pueda verificarla ella misma en pocos segundos, y que el sistema se abstenga en lugar de inventar cuando no existe evidencia real.
 
-## 4. Métricas (3 min)
+## Segunda sección, arquitectura, tres minutos
 
-Mostrar la tabla de `DOCUMENTO_TECNICO.md` sección 6 (Recall@5, MRR,
-exactitud de clasificación) y la comparación línea base (Fase 2, solo
-semántico) vs. mejorada (Fase 3, híbrido) — este es el dato más fuerte:
-la mejora de recuperación se traduce directamente en una mejora grande de
-clasificación final, no es una mejora aislada sin impacto real.
+Conviene mostrar el diagrama descrito en la sección tres de `DOCUMENTO_TECNICO.md`, o dibujarlo en vivo, siguiendo el flujo desde la extracción de afirmaciones hasta el recuperador híbrido y la evaluación de evidencia con sus tres verificaciones determinísticas, para terminar en la salida estructurada del sistema.
 
-Mencionar explícitamente la verificación del Recall@5 (ablation +
-corpus duplicado con distractores) — evita que suene a número inflado.
+El punto central que conviene explicar, no solo mostrar, es que el modelo de lenguaje no tiene la última palabra. Después de que el modelo clasifica una afirmación, un conjunto de verificaciones de código comprueba si la cita existe de verdad entre lo recuperado, si las cifras que menciona la afirmación aparecen literalmente en el texto citado, y si hay algún patrón de manipulación en la afirmación o en el documento. Si alguna de estas verificaciones falla, el sistema degrada la clasificación o se abstiene, sin importar qué tan convencido suene el modelo.
 
-## 5. Seguridad (2 min)
+Conviene mencionar brevemente que la recuperación es híbrida, combinando búsqueda semántica y léxica, porque las consultas están en español y el corpus en inglés, y la búsqueda puramente semántica tiende a perder términos técnicos exactos como BM25 o RAGAS.
 
-Mostrar la tabla SEC01-SEC07 de `DOCUMENTO_TECNICO.md` sección 5. Elegir
-1-2 casos para explicar con un poco más de detalle (recomendado: SEC01,
-porque es fácil de entender en 30 segundos — "si alguien le dice al
-sistema que ignore sus instrucciones, el sistema lo ignora a él, no al
-revés" — y SEC05, porque conecta directo con el problema de la sección 1:
-no alucina citas).
+## Tercera sección, demostración en vivo, cuatro minutos
 
-Mencionar de paso que se encontraron y arreglaron 2 bugs reales durante
-este trabajo (no solo "todo funcionó a la primera") — da credibilidad.
+Se sugieren dos flujos cortos dentro de la interfaz construida con Streamlit.
 
-## 6. Conclusiones (1 min)
+El primero consiste en verificar una afirmación suelta, usando la pestaña correspondiente, escribiendo una afirmación conocida del corpus, por ejemplo sobre FAISS o sobre BM25, y mostrando después la clasificación obtenida, la cita exacta con su fragmento y el JSON de salida completo.
 
-Cerrar con el patrón central del proyecto, en una frase: **cuando el LLM
-falla, la solución casi nunca fue ajustarle el prompt — fue escribir un
-chequeo de código que no depende de que se comporte bien.** Y que cada
-arreglo se verificó contra el sistema real, no solo en aislamiento.
+El segundo consiste en subir un PDF nuevo, usando la pestaña de análisis de documentos, dejando que el sistema extraiga sus afirmaciones, y mostrando el resumen por nivel de evidencia, incluyendo al menos un caso de evidencia parcial o de evidencia no localizada, para demostrar que el sistema no fuerza todo hacia una clasificación de evidencia suficiente.
 
----
+Si el tiempo apremia, conviene priorizar el primer flujo, que es más rápido y da más control sobre el resultado, y mencionar el segundo solamente de palabra.
 
-## Preguntas esperables (preparar respuesta corta)
+Conviene recordar, para no quedarse en silencio esperando, que con el modelo `qwen/qwen3.5-9b` cada afirmación tarda entre diez y veinticinco segundos en promedio, con un percentil noventa y cinco de alrededor de cuarenta a cincuenta segundos, así que conviene tener la consulta lista de antemano y lanzarla justo al empezar a hablar de esta sección.
 
-- **"¿Por qué no usan GPT-4/Claude en vez de un modelo local?"** — Costo y
-  privacidad durante desarrollo; el cliente habla REST directo
-  (`src/agent/llm_client.py`), cambiar de proveedor es solo variables de
-  entorno, no código (siempre que el proveedor soporte `response_format:
-  json_schema`).
-- **"¿Qué tan confiable es el Recall@5 de ~95%?"** — Verificado con
-  ablation (semántico-solo vs. léxico-solo vs. híbrido) y con el corpus
-  duplicado a 20 documentos con distractores reales; no se sostiene por
-  un solo truco.
-- **"¿Qué pasa si alguien sube un PDF malicioso?"** — SEC06: se valida
-  tipo, tamaño, páginas, cifrado y JavaScript embebido antes de procesar
-  nada; además texto invisible (SEC02) se filtra en la extracción.
-- **"¿Qué falta?"** — Ver `TODO.md`/`STATUS.md`: detección de nombres
-  propios en logs (bloqueada por spaCy en este entorno), y la limitación
-  de recuperación en afirmaciones compuestas entre documentos no
-  relacionados (ver `DOCUMENTO_TECNICO.md` sección 7).
+## Cuarta sección, métricas, tres minutos
+
+Conviene mostrar la tabla de resultados de la sección seis de `DOCUMENTO_TECNICO.md`, con el Recall, el MRR y la exactitud de clasificación, junto con la comparación entre la línea base de la fase dos, puramente semántica, y la versión mejorada de la fase tres, híbrida. Este es el dato más convincente, porque muestra que la mejora en la recuperación se traduce directamente en una mejora grande de la clasificación final, y no es una mejora aislada sin impacto real.
+
+Conviene mencionar explícitamente que el Recall se verificó mediante un estudio de ablación y mediante un corpus duplicado con distractores reales, para que el número no suene inflado.
+
+## Quinta sección, seguridad, dos minutos
+
+Conviene mostrar la tabla de los siete controles de seguridad de la sección cinco de `DOCUMENTO_TECNICO.md`, y elegir uno o dos casos para explicar con algo más de detalle. Se recomienda el primero, porque es fácil de entender en treinta segundos, ya que si alguien le dice al sistema que ignore sus instrucciones, el sistema ignora a quien lo dice y no al revés, y también el quinto, porque conecta directamente con el problema planteado en la primera sección, ya que el sistema no inventa citas.
+
+Conviene mencionar de paso que durante este trabajo se encontraron y corrigieron dos errores reales, en lugar de dar la impresión de que todo funcionó a la primera, porque eso le da credibilidad a la presentación.
+
+## Sexta sección, conclusiones, un minuto
+
+Conviene cerrar con el patrón central del proyecto, resumido en una idea simple. Cuando el modelo de lenguaje falla, la solución casi nunca consistió en ajustar las instrucciones que se le dan, sino en escribir un chequeo de código que no depende de que el modelo se comporte bien, y cada corrección se verificó contra el sistema real, no solamente de forma aislada.
+
+## Preguntas esperables
+
+Conviene preparar una respuesta corta para cada una de las siguientes preguntas.
+
+Si preguntan por qué no se usó GPT-4 o Claude en lugar de un modelo local, la respuesta es que durante el desarrollo se priorizó el costo y la privacidad, y que el cliente habla directamente por REST, de modo que cambiar de proveedor es solamente cuestión de variables de entorno y no de código, siempre que ese proveedor soporte el formato de respuesta estructurada JSON Schema.
+
+Si preguntan qué tan confiable es el Recall cercano al noventa y cinco por ciento, la respuesta es que se verificó con un estudio de ablación comparando la recuperación puramente semántica, la puramente léxica y la híbrida, y con el corpus duplicado a veinte documentos con distractores reales, de modo que no se sostiene por un solo truco.
+
+Si preguntan qué pasa si alguien sube un PDF malicioso, la respuesta es que el sexto control de seguridad valida el tipo de archivo, su tamaño, su número de páginas, si está cifrado y si contiene JavaScript embebido antes de procesar nada, y que además el texto invisible se filtra durante la extracción, como parte del segundo control.
+
+Si preguntan qué falta, la respuesta puede apoyarse en `TODO.md` y en `STATUS.md`, mencionando la detección de nombres propios en los registros de eventos, bloqueada por spaCy en este entorno, y la limitación de recuperación en afirmaciones compuestas entre documentos sin relación entre sí, descrita en la sección siete de `DOCUMENTO_TECNICO.md`.

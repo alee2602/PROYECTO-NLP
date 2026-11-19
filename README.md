@@ -2,47 +2,45 @@
 
 Sistema inteligente de análisis y trazabilidad de evidencia en documentos académicos.
 
-Proyecto final del curso CC3103 - Procesamiento de Lenguaje Natural (UVG).
+Proyecto final del curso CC3103, Procesamiento de Lenguaje Natural, Universidad del Valle de Guatemala.
 
 ## Qué hace
 
-Evidentia analiza afirmaciones presentes en documentos académicos y evalúa si cuentan
-con evidencia de respaldo dentro de un corpus de fuentes documentales autorizadas,
-usando NLP, RAG y un flujo agéntico. Cada resultado incluye los fragmentos y
-referencias documentales usados para facilitar su verificación.
+Evidentia analiza afirmaciones presentes en documentos académicos y evalúa si cuentan con evidencia de respaldo dentro de un corpus de fuentes documentales autorizadas, usando procesamiento de lenguaje natural, recuperación aumentada de información y un flujo agéntico. Cada resultado incluye los fragmentos y las referencias documentales usados, de modo que el propio usuario pueda verificarlos.
 
-## Estructura del repo
+## Estructura del repositorio
 
 ```
 data/
   raw/        PDFs originales del corpus (no versionados, ver .gitignore)
   processed/  documents.json (metadata, versionado) y chunks.jsonl (texto, no versionado)
-  eval/       Banco de pruebas de evaluación (casos de prueba)
+  eval/       Banco de pruebas de evaluación
 src/
-  ingestion/  Carga, extracción, limpieza, chunking, fuente de arXiv
+  ingestion/  Carga, extracción, limpieza y segmentación de documentos, fuente de arXiv
   retrieval/  Embeddings, índice vectorial, búsqueda híbrida
-  agent/      Orquestador, herramientas (extract_claims, search_evidence, etc.) y cliente LLM
+  agent/      Orquestador, herramientas del agente y cliente del modelo de lenguaje
   schemas/    Modelos Pydantic de metadatos y del esquema de salida obligatorio
-scripts/      Scripts de uso manual (armar corpus, probar el LLM)
+scripts/      Scripts de uso manual (armar el corpus, probar el modelo de lenguaje)
+app/          Interfaz Streamlit
 tests/        Pruebas unitarias y de integración
-docs/         Anteproyecto y documentación técnica
 ```
 
-## Documentos del repo
+## Documentos del repositorio
 
 | Archivo | Para qué sirve |
 |---|---|
-| `STATUS.md` | Foto del estado actual del proyecto — qué está listo, qué falta de verdad, por dónde retomar. Léelo primero si vuelves al proyecto después de un tiempo. |
-| `TODO.md` | Lista de tareas pendientes, organizada por las 6 fases/ciclos del curso (Anteproyecto, Línea Base, Mejora Técnica, Evaluación, Seguridad, Demostración y Defensa). |
-| `DECISIONS.md` | Log de decisiones de diseño e iteraciones: contexto, qué se decidió, alternativas consideradas, estado y gaps abiertos. Base para las secciones de "limitaciones" y "trabajo futuro" del documento técnico final. |
-| `CLAUDE.md` | Reglas de trabajo para Claude Code en este repo (estilo de commits, qué no se sube a git, contexto del proyecto). |
+| `STATUS.md` | Fotografía del estado actual del proyecto, con lo que ya está listo, lo que falta de verdad y por dónde conviene retomar el trabajo. Conviene leerlo primero si se vuelve al proyecto después de un tiempo. |
+| `TODO.md` | Lista de tareas pendientes, organizada según las seis fases del curso (anteproyecto, línea base, mejora técnica, evaluación, seguridad, y demostración y defensa). |
+| `DECISIONS.md` | Registro de decisiones de diseño e iteraciones, con el contexto de cada una, qué se decidió, qué alternativas se consideraron, su estado y los vacíos que quedan abiertos. Es la base de las secciones de limitaciones y trabajo futuro del documento técnico final. |
+| `DOCUMENTO_TECNICO.md` | Documento técnico final del proyecto. |
+| `PLAN_DE_TRABAJO.md` | Plan de trabajo real, con responsables y fechas tomados del historial de control de versiones, pensado para copiarse a la sección de plan de trabajo del anteproyecto. |
+| `GUION_DEMO.md` | Guion de la demostración en vivo. |
+| `CLAUDE.md` | Reglas de trabajo para Claude Code dentro de este repositorio. |
 | `requirements.txt` | Dependencias de Python del proyecto. |
 
-## Setup
+## Preparación del entorno
 
-**Usamos un entorno conda, no `venv`** (ver `DECISIONS.md`: `torch` instalado vía
-`pip` en un `venv` quedó bloqueado por Smart App Control de Windows; la copia
-de `torch` instalada vía `conda` no tiene ese problema).
+El proyecto usa un entorno de conda y no un `venv` convencional. Como se explica en `DECISIONS.md`, la copia de `torch` instalada mediante `pip` dentro de un `venv` quedó bloqueada por el Control de aplicaciones de Windows, mientras que la instalada mediante `conda` no presenta ese problema.
 
 ```powershell
 conda create -n evidentia python=3.12 -y
@@ -51,92 +49,68 @@ conda activate evidentia
 pip install -r requirements.txt
 ```
 
-Si en tu máquina `pytorch` desde el canal `pytorch` da un error de versión con
-`transformers` (pide `torch >= 2.6`), instala una build más nueva, por ejemplo:
+Si en una máquina particular la versión de `pytorch` del canal `pytorch` resulta incompatible con `transformers`, que exige `torch >= 2.6`, conviene instalar una compilación más reciente como la siguiente.
 
 ```powershell
-conda search "pytorch[version='>=2.6']" -c pytorch   # ver qué builds hay para tu Python
-conda install -n evidentia pytorch=2.15.0 -c pytorch -y   # ajustar versión/build según lo que encuentres
+conda search "pytorch[version='>=2.6']" -c pytorch
+conda install -n evidentia pytorch=2.15.0 -c pytorch -y
 ```
 
-Para correr cualquier script del proyecto, usar el Python de este entorno:
+Para correr cualquier script del proyecto conviene usar el Python de este entorno.
 
 ```powershell
-C:\Users\<tu-usuario>\anaconda3\envs\evidentia\python.exe scripts\build_corpus.py
-C:\Users\<tu-usuario>\anaconda3\envs\evidentia\python.exe -m pytest tests/
+C:\Users\<usuario>\anaconda3\envs\evidentia\python.exe scripts\build_corpus.py
+C:\Users\<usuario>\anaconda3\envs\evidentia\python.exe -m pytest tests/
 ```
 
-(o `conda activate evidentia` primero y usar `python`/`pytest` directo).
+También puede activarse el entorno primero con `conda activate evidentia` y usar `python` o `pytest` directamente.
 
-## Datos: cómo regenerarlos en tu máquina
+## Cómo regenerar los datos localmente
 
-`data/raw/` (PDFs) y `data/processed/chunks.jsonl` (texto completo de los chunks)
-**no se suben a git** — ni los PDFs originales ni el texto extraído de papers de
-terceros se redistribuyen por este medio (ver `DECISIONS.md`). Lo único versionado
-es `data/processed/documents.json`, que solo tiene metadata bibliográfica.
+Ni los PDFs originales (`data/raw/`) ni el texto completo extraído de los chunks (`data/processed/chunks.jsonl`) se suben a git, porque el contenido de artículos de terceros no debe redistribuirse por ese medio, según se documenta en `DECISIONS.md`. Lo único versionado es `data/processed/documents.json`, que contiene solamente metadata bibliográfica.
 
-Si clonas el repo de cero, para tener los datos localmente corre:
+Quien clone el repositorio desde cero puede obtener los datos localmente corriendo lo siguiente.
 
 ```powershell
 conda activate evidentia
 python scripts\build_corpus.py
 ```
 
-Esto descarga los 10 papers de arXiv (D01-D10) a `data/raw/`, los procesa con el
-pipeline de ingesta, y regenera `data/processed/documents.json` y `chunks.jsonl`.
-Es reproducible: siempre arma el mismo corpus (mismas queries, mismo filtro de
-duplicados/tamaño) salvo que arXiv cambie qué devuelve como más relevante para esas
-búsquedas.
+Esto descarga los diez artículos iniciales de arXiv a `data/raw/`, los procesa con el flujo de ingesta y regenera `data/processed/documents.json` y `chunks.jsonl`. El proceso es reproducible, porque siempre arma el mismo corpus a partir de las mismas consultas y del mismo filtro de duplicados y tamaño, salvo que arXiv cambie qué resultados considera más relevantes para esas búsquedas.
 
-## Usar el modelo generativo con LM Studio
+## Uso del modelo generativo con LM Studio
 
-El sistema necesita un LLM para `evaluate_evidence` (clasificar afirmaciones contra
-evidencia). Por defecto el proyecto apunta a **LM Studio corriendo en tu propia
-máquina** (gratis, privado, sin API key) — ver `src/agent/llm_client.py` y
-`DECISIONS.md` para el porqué.
+El sistema necesita un modelo de lenguaje para evaluar afirmaciones contra la evidencia recuperada. Por defecto, el proyecto está configurado para usar LM Studio corriendo en la propia máquina, de forma gratuita y privada, sin necesidad de una clave de API. El porqué de esta decisión está explicado en `src/agent/llm_client.py` y en `DECISIONS.md`.
 
-### 1. Instalar LM Studio
+### Primero, instalar LM Studio
 
-Descargar de [lmstudio.ai](https://lmstudio.ai) e instalar normalmente.
+Se descarga de [lmstudio.ai](https://lmstudio.ai) y se instala de la forma habitual.
 
-### 2. Descargar un modelo
+### Segundo, descargar un modelo
 
-Abrir LM Studio → pestaña de búsqueda/Discover → buscar un modelo instruct de
-**solo texto** (NO uno "VL"/vision-language — esos reservan capacidad para
-imágenes y razonan peor en texto puro). Recomendado: `qwen/qwen3.5-9b`
-(el que usa este repo en las pruebas manuales — ver `DECISIONS.md`: con la
-variante VL de 7B el sistema fallaba en casos de contradicción de forma
-irresoluble por prompt; con este modelo de texto de 9B se resolvió solo
-cambiando el modelo). Tiene que soportar **salida estructurada (JSON
-Schema)**; la mayoría de modelos "instruct" recientes de Qwen, Llama o
-Mistral lo soportan.
+Dentro de LM Studio, en la pestaña de búsqueda, conviene buscar un modelo de tipo instruct que trabaje solamente con texto, no uno de la variante "VL" o de visión y lenguaje, ya que estos reservan capacidad para imágenes y razonan peor sobre texto puro. Se recomienda `qwen/qwen3.5-9b`, el modelo que usa este repositorio en sus pruebas. Como se documenta en `DECISIONS.md`, la variante de visión y lenguaje de 7000 millones de parámetros fallaba de forma irresoluble por prompt en casos de contradicción, mientras que este modelo de texto de 9000 millones de parámetros resolvió el problema con el simple cambio de modelo. El modelo elegido debe soportar salida estructurada mediante JSON Schema, algo que la mayoría de los modelos instruct recientes de Qwen, Llama o Mistral ya soporta.
 
-### 3. Levantar el servidor local
+### Tercero, levantar el servidor local
 
-Dos formas, cualquiera funciona:
+Hay dos formas de hacerlo y cualquiera de las dos funciona.
 
-**Desde la app**: pestaña del servidor local (ícono `<->`) → seleccionar el modelo
-descargado → "Start Server". Queda escuchando en `http://localhost:1234`.
+Desde la aplicación, se abre la pestaña del servidor local, identificada con el ícono `<->`, se elige el modelo descargado y se presiona "Start Server". El servidor queda escuchando en `http://localhost:1234`.
 
-**Desde la terminal** (más rápido, no hay que abrir la ventana de LM Studio):
+Desde la terminal, de forma más rápida y sin necesidad de abrir la ventana de LM Studio, se corre lo siguiente.
 
 ```powershell
 lms server start
 lms load qwen/qwen3.5-9b --context-length 16384
-lms status   # confirma que el server está ON y el modelo cargado
+lms status
 ```
 
-**Importante**: usar `--context-length 16384` (o más). Con el contexto por
-defecto (4096 tokens) el sistema falla con `top_k=5` evidencias — 5 chunks de
-~450 palabras más el prompt superan ese límite (ver `DECISIONS.md`).
+El último comando confirma que el servidor está activo y que el modelo quedó cargado. Es importante usar `--context-length 16384` o un valor mayor, porque con el contexto por defecto de 4096 tokens el sistema falla cuando se recuperan cinco fragmentos de evidencia, ya que cinco fragmentos de unas 450 palabras cada uno, sumados al resto del mensaje, superan ese límite, como se explica en `DECISIONS.md`. Conviene además verificar con `lms ps` que la columna de contexto efectivamente muestre 16384, porque cargar un modelo que ya estaba cargado no siempre aplica el nuevo valor.
 
-(`lms` se instala junto con LM Studio, normalmente en
-`%USERPROFILE%\.lmstudio\bin\lms.exe`.)
+El ejecutable `lms` se instala junto con LM Studio, por lo general en `%USERPROFILE%\.lmstudio\bin\lms.exe`.
 
-### 4. Configurar las variables de entorno
+### Cuarto, configurar las variables de entorno
 
-Copiar `.env.example` a `.env` y ajustar `LLM_MODEL` al identificador exacto del
-modelo que cargaste (el mismo nombre que usas en `lms load`):
+Se copia `.env.example` a `.env` y se ajusta `LLM_MODEL` al identificador exacto del modelo cargado, el mismo nombre que se usó en `lms load`.
 
 ```bash
 copy .env.example .env
@@ -148,29 +122,18 @@ LLM_API_KEY=lm-studio
 LLM_MODEL=qwen/qwen3.5-9b
 ```
 
-### 5. Probar que funciona
+### Quinto, probar que todo funciona
 
 ```powershell
 conda activate evidentia
 python scripts\check_llm.py
 ```
 
-Si todo está bien, imprime un `EvidentiaOutput` válido (clasificación, fuentes, etc.)
-en vez de la respuesta de abstención por fallo. Si falla, revisar que el servidor
-esté `ON` (`lms status`) y que `LLM_MODEL` coincida exactamente con el modelo cargado.
+Si todo está bien, el script imprime un `EvidentiaOutput` válido, con su clasificación y sus fuentes, en lugar de la respuesta de abstención por fallo. Si falla, conviene revisar que el servidor esté activo mediante `lms status` y que `LLM_MODEL` coincida exactamente con el modelo cargado.
 
 ### Nota sobre el SDK de OpenAI
 
-El proyecto **no usa el SDK `openai`**, habla directo por REST con `requests` —
-en Windows, el SDK falló por un binario nativo (`jiter`) bloqueado por Smart App
-Control. Si cambian de proveedor (a una API en la nube en vez de LM Studio), solo
-hay que cambiar las variables de entorno, no el código — pero confirmar que ese
-proveedor también soporte `response_format: json_schema` (ver `DECISIONS.md`).
-
-## Integrantes
-
-- Mónica Salvatierra (22249)
-- Bianca Calderón (22272)
+El proyecto no usa el SDK oficial de `openai`, sino que habla directamente por REST usando la biblioteca `requests`. Esto se debe a que, en Windows, el SDK falló por culpa de un binario nativo llamado `jiter`, que quedó bloqueado por el Control de aplicaciones de Windows. Si en algún momento se cambia de proveedor, por ejemplo hacia una API en la nube en lugar de LM Studio, basta con cambiar las variables de entorno sin tocar el código, siempre que ese proveedor también soporte el formato de respuesta `json_schema`, como se detalla en `DECISIONS.md`.
 
 ## Interfaz
 
@@ -179,4 +142,9 @@ conda activate evidentia
 streamlit run app/streamlit_app.py
 ```
 
-Requiere el servidor de LM Studio activo (ver arriba) y el corpus en `data/processed/chunks.jsonl` (`python scripts/build_corpus.py`).
+Requiere que el servidor de LM Studio esté activo, según se describe arriba, y que el corpus ya exista en `data/processed/chunks.jsonl`, lo cual se logra corriendo `python scripts/build_corpus.py`.
+
+## Integrantes
+
+- Mónica Salvatierra (22249)
+- Bianca Calderón (22272)

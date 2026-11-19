@@ -1,72 +1,45 @@
-# Plan de trabajo real (para la sección 15 del anteproyecto)
+# Plan de trabajo real
 
-El anteproyecto original dejó la sección 15 con fechas placeholder (`[fecha]`)
-y tareas asignadas a un "Integrante 3" hipotético que nunca se unió al
-equipo (decisión de equipo: quedarse en 2 integrantes, ver `DECISIONS.md`).
-Esta tabla reemplaza esos placeholders con lo que realmente pasó —
-responsable y fecha real, tomados de `git log`, no inventados — para
-copiar directo a la sección 15.
+## Para la sección de plan de trabajo del anteproyecto
 
-## Tabla de trabajo por fase
+El anteproyecto original dejó esa sección con fechas marcadas como pendientes y con tareas asignadas a un tercer integrante hipotético que nunca llegó a unirse al equipo, según la decisión de equipo documentada en `DECISIONS.md` de quedarse en dos integrantes. Esta tabla reemplaza esos espacios pendientes con lo que realmente ocurrió, con el responsable y la fecha real de cada tarea tomados directamente del historial de control de versiones y no estimados de memoria, de modo que pueda copiarse tal cual a esa sección.
 
 | Fase | Tarea | Responsable | Fecha |
 |---|---|---|---|
-| 1 — Anteproyecto | Estructura del repo, renombrar a Evidentia, marcar Fase 1 completa | Mónica | 2026-11-04 a 2026-11-09 |
-| 2 — Línea Base | Pipeline de ingesta (PDF→texto→limpieza→chunking), esquemas Pydantic | Mónica | 2026-11-09 |
-| 2 — Línea Base | Recuperación semántica (FAISS), cliente LLM (REST directo, sin SDK de OpenAI) | Mónica | 2026-11-09 |
-| 2 — Línea Base | Corpus inicial (10 papers de arXiv) y validación de la recuperación | Mónica | 2026-11-09 |
-| 3 — Mejora Técnica | Recuperación híbrida (BM25 propio + boost de identificadores), limpieza cross-lingüe | Mónica | 2026-11-10 |
-| 3 — Mejora Técnica | `validate_citations` determinístico, migración a entorno conda | Mónica | 2026-11-10 |
-| 3 — Mejora Técnica | `extract_claims` + orquestador agéntico (LangGraph), filtro de vaguedad | Mónica | 2026-11-10 |
-| 4 — Evaluación | Banco de 25 casos + runner (`run_eval.py`), primera corrida real | Mónica | 2026-11-10 |
-| 4 — Evaluación | Ablation de recuperación (corpus duplicado, verificación de Recall@5) | Mónica | 2026-11-10 |
-| 4 — Evaluación | Cambio de modelo (`qwen/qwen3.5-9b`) y arreglos de clasificación (arXiv-ID, metadata de versión) | Mónica | 2026-11-10 |
-| 4 — Evaluación | Límites duros de parámetros (`top_k≤20`, `max_claims≤15`) | Bianca | 2026-11-10 |
-| 4 — Evaluación | Confirmación de TH03 contra el sistema real | Mónica | 2026-11-11 |
-| 4 — Evaluación | Métrica de Recall@5 corregida para afirmaciones compuestas, MRR, latencia/tokens, comparación línea base vs. mejorada | Mónica | 2026-11-19 |
-| 5 — Seguridad | Implementación y verificación de SEC01-SEC07 (los 7 controles) | Mónica | 2026-11-11 |
-| 5 — Seguridad | Presupuestos de agente (iteraciones, llamadas LLM, llamadas externas), validación de DOI | Bianca | 2026-11-14 |
-| 5 — Seguridad | Corrección del filtro `owner_id` (se aplicaba después de recortar el pool de candidatos) | Bianca | 2026-11-14 |
-| 5 — Seguridad | Decisión de equipo: `owner_id=None` debe ocultar chunks privados por defecto (antes no filtraba nada) | Mónica | 2026-11-19 |
-| 6 — Demostración | Documento técnico, guion de demo, plan de trabajo actualizado | Mónica | 2026-11-19 |
+| Anteproyecto | Estructura del repositorio, cambio de nombre del proyecto a Evidentia, cierre de la fase | Mónica | 4 al 9 de noviembre de 2026 |
+| Línea base | Flujo de ingesta de documentos, con la extracción, la limpieza y la segmentación, más los esquemas de Pydantic | Mónica | 9 de noviembre de 2026 |
+| Línea base | Recuperación semántica con FAISS y cliente del modelo de lenguaje por REST directo, sin el SDK de OpenAI | Mónica | 9 de noviembre de 2026 |
+| Línea base | Corpus inicial de diez artículos de arXiv y validación de la recuperación | Mónica | 9 de noviembre de 2026 |
+| Mejora técnica | Recuperación híbrida con BM25 propio y refuerzo de identificadores, limpieza de texto entre idiomas | Mónica | 10 de noviembre de 2026 |
+| Mejora técnica | Validación determinística de citas y migración del entorno de desarrollo a conda | Mónica | 10 de noviembre de 2026 |
+| Mejora técnica | Extracción de afirmaciones y orquestador agéntico con LangGraph, con su filtro de vaguedad | Mónica | 10 de noviembre de 2026 |
+| Evaluación | Banco de veinticinco casos de prueba y su primer corrida real contra el sistema | Mónica | 10 de noviembre de 2026 |
+| Evaluación | Estudio de ablación de recuperación y verificación del Recall sobre el corpus duplicado | Mónica | 10 de noviembre de 2026 |
+| Evaluación | Cambio de modelo de lenguaje y corrección de los errores de clasificación relacionados con identificadores de arXiv y con la metadata de versión | Mónica | 10 de noviembre de 2026 |
+| Evaluación | Límites duros de parámetros para el número de resultados y de afirmaciones | Bianca | 10 de noviembre de 2026 |
+| Evaluación | Confirmación del caso de prueba sobre parámetros fuera de rango contra el sistema real | Mónica | 11 de noviembre de 2026 |
+| Evaluación | Corrección de la métrica de Recall para afirmaciones compuestas, incorporación del MRR, de la latencia y del consumo de tokens, y comparación entre la línea base y la versión mejorada | Mónica | 19 de noviembre de 2026 |
+| Seguridad | Implementación y verificación de los siete controles de seguridad adversarios | Mónica | 11 de noviembre de 2026 |
+| Seguridad | Presupuestos del agente para iteraciones, llamadas al modelo y llamadas externas, y validación de identificadores DOI | Bianca | 14 de noviembre de 2026 |
+| Seguridad | Corrección del filtro de permisos, que se aplicaba después de recortar el conjunto de candidatos | Bianca | 14 de noviembre de 2026 |
+| Seguridad | Decisión de equipo de que la ausencia de identidad debe ocultar los fragmentos privados por defecto | Mónica | 19 de noviembre de 2026 |
+| Evaluación | Incorporación al flujo de evaluación del caso de prueba sobre confirmación humana ante la ampliación de búsqueda, que estaba definido en el banco de pruebas pero nunca se ejecutaba de verdad | Mónica | 19 de noviembre de 2026 |
+| Demostración y defensa | Documento técnico, guion de demostración y actualización de este plan de trabajo | Mónica | 19 de noviembre de 2026 |
 
-## Tareas no contempladas en el plan original
+## Tareas que no estaban contempladas en el plan original
 
-El anteproyecto no las anticipó explícitamente como tareas propias, pero
-resultaron necesarias y se hicieron:
+Algunas tareas no fueron anticipadas explícitamente en el anteproyecto, pero resultaron necesarias y se llevaron a cabo de todas formas.
 
-- **Interfaz Streamlit** (`app/streamlit_app.py`): el anteproyecto asignaba
-  "interfaz" genéricamente a Fase 3 / Integrante 3. En la práctica se
-  construyó después, en paralelo a Fase 5 (Bianca, 2026-11-16) — permite
-  subir un PDF, analizar sus afirmaciones o verificar una afirmación suelta,
-  y usa de verdad los controles de seguridad ya implementados (`owner_id`
-  de sesión para SEC03, validación de archivo para SEC06).
-- **Migración de entorno** (`venv` → `conda`): no estaba en el plan; fue
-  necesaria porque Windows Smart App Control bloqueaba binarios nativos
-  instalados por `pip` (`torch`, el SDK de `openai`) — ver `DECISIONS.md`.
-- **Reconciliación de dos implementaciones paralelas de Fase 5**: Mónica y
-  Bianca implementaron seguridad por separado sin coordinarse primero; se
-  resolvió conservando la de Mónica (ya verificada) y portando las piezas
-  adicionales de Bianca (presupuestos, validación de DOI, corrección del
-  filtro `owner_id`). Lección para las fases que quedan: coordinar quién
-  toca qué módulo antes de empezar, no después.
-- **Hallazgo y corrección de 2 bugs preexistentes** no relacionados con la
-  tarea que se estaba haciendo en el momento: `pdf_loader.py` cerraba el
-  documento antes de leer `doc.page_count` en el mensaje de error (apareció
-  al escribir tests reales para SEC06); y un `PermissionError` de Windows al
-  limpiar un directorio temporal después de que `fitz` fallara al abrir un
-  PDF inválido (apareció al correr los tests después del `git pull` de los
-  cambios de Bianca).
+La interfaz construida con Streamlit no estaba asignada a nadie en particular, ya que el anteproyecto la ubicaba de forma genérica en la fase de mejora técnica, a cargo del integrante que nunca se unió al equipo. En la práctica, Bianca la construyó más adelante, en paralelo a la fase de seguridad, el 16 de noviembre de 2026. Esa interfaz permite subir un PDF, analizar sus afirmaciones o verificar una afirmación suelta, y usa de verdad los controles de seguridad ya implementados, como la identidad de sesión del control de permisos y la validación de archivos.
 
-## Reasignación de tareas de "Integrante 3"
+La migración del entorno de desarrollo de un `venv` convencional a un entorno de conda tampoco estaba en el plan. Resultó necesaria porque el Control de aplicaciones de Windows bloqueaba binarios nativos instalados mediante `pip`, como `torch` y el SDK de `openai`, según se explica en `DECISIONS.md`.
 
-El anteproyecto original (sección 15) asignaba a un tercer integrante
-hipotético: interfaz (Fase 3) y evaluación (Fase 4). Con el equipo
-confirmado en 2 personas, esto quedó así en la práctica (no por asignación
-previa, sino por cómo se repartió el trabajo real):
+También fue necesario reconciliar dos implementaciones paralelas de la fase de seguridad, porque Mónica y Bianca la trabajaron por separado sin coordinarse primero. El problema se resolvió conservando la implementación de Mónica, que ya estaba verificada, y añadiéndole las piezas adicionales que Bianca había construido por su lado, como los presupuestos del agente, la validación de DOI y la corrección del filtro de permisos. La lección que queda para las fases restantes es coordinar de antemano quién trabaja en qué módulo, en lugar de reconciliar después.
 
-- **Evaluación (Fase 4)**: Mónica — banco de pruebas, runner, métricas,
-  ablation, comparación línea base vs. mejorada.
-- **Interfaz**: Bianca — Streamlit UI, construida en Fase 5 en vez de
-  Fase 3 (se priorizó tener el pipeline agéntico y la seguridad sólidos
-  antes de exponerlos en una interfaz).
+Por último, en el camino se encontraron y corrigieron dos errores reales que no estaban relacionados con la tarea que se estaba realizando en ese momento. Uno estaba en `pdf_loader.py`, que cerraba el documento antes de volver a leer el número de páginas dentro del mensaje de error, y apareció al escribir pruebas reales para el control de archivos maliciosos. El otro era un error de permisos de Windows al limpiar un directorio temporal después de que la biblioteca de manejo de PDF fallara al abrir un archivo inválido, y apareció al correr las pruebas después de incorporar los cambios de Bianca al repositorio local.
+
+## Reasignación de las tareas del tercer integrante
+
+El anteproyecto original asignaba al tercer integrante hipotético la interfaz, en la fase de mejora técnica, y la evaluación, en la fase de evaluación. Con el equipo confirmado en dos personas, el reparto real quedó de la siguiente manera, no por una asignación decidida de antemano sino por cómo se distribuyó el trabajo en la práctica.
+
+La evaluación quedó a cargo de Mónica, incluyendo el banco de pruebas, el programa que lo ejecuta, las métricas, el estudio de ablación y la comparación entre la línea base y la versión mejorada. La interfaz quedó a cargo de Bianca, construida durante la fase de seguridad en lugar de la fase de mejora técnica, porque el equipo priorizó tener primero un flujo agéntico y una seguridad sólidos antes de exponerlos mediante una interfaz.
