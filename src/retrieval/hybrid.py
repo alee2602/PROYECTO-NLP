@@ -28,11 +28,14 @@ def _extract_identifiers(text: str) -> set[str]:
 
 
 def _is_accessible(chunk: ChunkMetadata, owner_id: str | None) -> bool:
-    """SEC03 (anteproyecto sección 13): sin owner_id (comportamiento actual
-    por defecto, corpus compartido) no se filtra nada. Con un owner_id, solo
-    quedan visibles los chunks públicos (owner_id=None) o del propio owner."""
-    if owner_id is None:
-        return True
+    """SEC03 (anteproyecto sección 13): seguro por defecto. Sin identidad
+    (owner_id=None) solo se ven chunks públicos (chunk.owner_id=None) — NO
+    todo el índice. El anteproyecto dice que los PDFs de usuario "solo se
+    recuperan dentro de su sesión", lo que implica que sin identidad no
+    deberían verse en absoluto, ni los propios ni los de nadie más (decisión
+    de equipo 2026-11-19, ver DECISIONS.md; antes `owner_id=None` desactivaba
+    el filtro por completo, dejando ver chunks privados de cualquier
+    usuario a quien no pasara identidad)."""
     return chunk.owner_id is None or chunk.owner_id == owner_id
 
 
@@ -86,10 +89,13 @@ class HybridRetriever:
             return []
         pool = min(max(candidate_pool, top_k), n_chunks)
 
-        # Con owner_id se pide el índice completo y se filtra ANTES de recortar
-        # a `pool`: si no, chunks ajenos mejor rankeados ocuparían el pool y
-        # dejarían sin resultados a quien sí tiene permiso.
-        fetch_k = n_chunks if owner_id is not None else pool
+        # Si hay algún chunk privado en el índice (de cualquier owner), se
+        # pide el índice completo y se filtra ANTES de recortar a `pool`: si
+        # no, chunks ajenos mejor rankeados ocuparían el pool y dejarían sin
+        # resultados a quien sí tiene permiso (o filtrarían de menos a quien
+        # no pasó owner_id, viendo chunks privados que no debería).
+        has_private_chunks = any(c.owner_id is not None for c in self._chunks)
+        fetch_k = n_chunks if (owner_id is not None or has_private_chunks) else pool
         semantic_hits = [
             hit for hit in self.semantic.search(query, top_k=fetch_k) if _is_accessible(hit.chunk, owner_id)
         ][:pool]

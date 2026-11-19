@@ -18,6 +18,51 @@ Formato por entrada:
 
 ---
 
+## [2026-11-19] `owner_id=None` ahora oculta chunks privados de todos (seguro por defecto)
+
+**Contexto**: decisión abierta desde la reconciliación de Fase 5 (ver entrada 2026-11-14). `_is_accessible` desactivaba el filtro por completo cuando el llamador no pasaba `owner_id` (`if owner_id is None: return True`) — una consulta sin identidad podía ver chunks privados de cualquier usuario. El anteproyecto dice que los PDFs de usuario "solo se recuperan dentro de su sesión", lo que implica que sin identidad no deberían verse en absoluto, ni los propios ni los de nadie más. Esto importaba más ahora que la interfaz Streamlit (Bianca, 2026-11-16) ya expone subida real de PDFs con `owner_id` de sesión.
+**Decisión**: `_is_accessible` queda en una sola regla sin casos especiales: `chunk.owner_id is None or chunk.owner_id == owner_id`. Sin identidad (`owner_id=None`), solo pasan los chunks públicos. `HybridRetriever.search` también ajustó cuándo pide el índice completo antes de recortar al pool: antes solo lo hacía si el llamador pasaba un `owner_id` explícito; ahora lo hace también si el índice contiene CUALQUIER chunk privado, sin importar si el llamador pasó identidad o no — si no, chunks privados mejor rankeados podrían "robarse" el pool y dejar fuera a los públicos (o viceversa).
+**Alternativas consideradas**: dejar el comportamiento tal cual y solo documentarlo como limitación conocida — descartado porque la interfaz ya expone subida de PDFs reales; un hueco de diseño documentado pero no corregido deja de ser defendible una vez hay una superficie de ataque real.
+**Impacto verificado**: cero regresión en el corpus compartido actual — todos sus chunks tienen `owner_id=None` (públicos), así que las corridas de `run_eval.py`, `run_security_eval.py`, `run_baseline_vs_improved.py` y `run_retrieval_ablation.py` (ninguna pasa `owner_id`) siguen viendo exactamente lo mismo que antes. El cambio solo afecta al caso real que importa: un índice con chunks privados mezclados (como en la sesión de Streamlit) y una búsqueda sin identidad.
+**Estado**: confirmada. `tests/test_hybrid.py` actualizado: `test_no_owner_id_means_no_filtering_for_an_all_public_corpus` (el comportamiento con el corpus compartido no cambia) + `test_no_owner_id_hides_private_chunks_from_everyone` (nuevo, el caso que antes fallaba). 122/122 tests pasan.
+**Gaps abiertos**: ninguno — decisión cerrada.
+
+## [2026-11-19] Fase 4 rehecha: el trabajo de la sesión anterior se había perdido (nunca se comiteó)
+
+**Contexto**: al retomar el proyecto después de un `git pull`, se confirmó que el arreglo de la métrica de Recall@5 (TC14), las métricas de MRR/latencia/tokens y el script de comparación línea base vs. mejorada de la sesión anterior nunca se habían comiteado — no estaban en el repo. Se rehicieron desde cero, con el mismo método de antes.
+
+**TC14 / métrica de recall para casos multi-documento**: `scripts/run_eval.py` medía Recall@5 con overlap "any" incluso para afirmaciones compuestas que necesitan AMBOS documentos (TC12, TC14) — TC14 marcaba `recall_hit=True` recuperando solo D01, aunque D05 nunca apareciera. Se cambió a exigir el conjunto completo (`issubset`) para casos con más de un `expected_sources`, **excepto** la categoría `ambigua` (TC15): ahí las 4 fuentes listadas son alternativas plausibles para una afirmación deliberadamente vaga, no un conjunto obligatorio.
+
+**Recalibrar `expected_evidence_level` — revisado, sin cambios**: con la métrica de recall ya corregida, los únicos 2 casos que no coinciden son TC14 y TC15 — y en ambos la causa no es una etiqueta mal calibrada, sino una limitación real y documentada (D05 nunca se recupera para TC14; el modelo combina dos papers no relacionados para la afirmación deliberadamente vaga de TC15). No se cambió ninguna etiqueta de `test_cases.json`.
+
+**Métricas adicionales**: `src/agent/llm_client.py` acumula `total_prompt_tokens`/`total_completion_tokens`/`total_calls` desde el campo `usage` de cada respuesta. `scripts/run_eval.py` reporta también MRR y latencia (media/P95) de búsqueda y de `evaluate_claim`.
+
+**Resultado real confirmado (corrida completa, 2026-11-19, corpus de 20 docs + `qwen/qwen3.5-9b`, contexto 16384)**:
+- Recall@5: **95.24% (20/21)** — ya no inflado por la métrica "any".
+- MRR: **0.921**.
+- Exactitud de clasificación: **91.30% (21/23)** — los 2 casos que no coinciden son TC14 y TC15, limitaciones conocidas, no errores de calibración.
+- Latencia de búsqueda: media 0.119s, P95 0.494s.
+- Latencia de `evaluate_claim`: media 94.6s, P95 48.3s — **la media sale mayor que el P95 porque TC09 tardó 1609s (27 min) de forma anómala** (vs. 15-50s el resto de los 22 casos), probablemente el mismo tipo de degradación del motor local ya documentado (ver entrada de 2026-11-10 sobre el crash de grammar de llama.cpp) y no un bug de nuestro código — se reporta tal cual, sin descartar el outlier, porque es un dato operativo real: la latencia P95 del sistema es aceptable, pero el peor caso observado puede ser mucho peor.
+- 52 llamadas al LLM, 165,864 tokens totales en la corrida de 23 casos.
+
+**Comparación línea base (Fase 2, solo semántico) vs. mejorada (Fase 3, híbrido)**: `scripts/run_baseline_vs_improved.py`, mismo banco, mismo pipeline de `evaluate_claim` (solo cambia el retriever). Resultado real contra LM Studio:
+
+| Métrica | Línea base (solo semántico) | Mejorada (híbrido) |
+|---|---|---|
+| Recall@5 | 85.7% | 95.2% |
+| MRR | 0.720 | 0.921 |
+| Exactitud de clasificación | 65.2% | 91.3% |
+
+6 casos cambian de clasificación entre variantes (TC10, TC11, TC12, TC13, TC19, TH02) — en los 6, la mejora de recuperación es lo que permite que `evaluate_claim` llegue a la clasificación correcta. Esta tabla es la evidencia concreta de que la mejora técnica de Fase 3 no es solo una mejora de recuperación aislada: se traduce directamente en +26 puntos porcentuales de exactitud de clasificación final.
+
+**Bug ambiental encontrado al re-correr**: el modelo en LM Studio había quedado cargado con el contexto por defecto (4096 tokens), no los 16384 documentados en el README — causó que casi todas las evaluaciones fallaran silenciosamente (reintentos agotados → abstención), con solo 7/23 llamadas reales completándose y exactitud cayendo a 17.39%. Diagnosticado con `lms ps` (columna `CONTEXT`), corregido con `lms unload --all` seguido de `lms load qwen/qwen3.5-9b --context-length 16384`. **Lección**: `lms load` sobre un modelo ya cargado no necesariamente aplica los nuevos flags — hay que descargar primero si se sospecha que el contexto no es el esperado.
+
+**Bugs reales no relacionados, encontrados y arreglados en el camino** (introducidos por los cambios de Bianca del `git pull`, no por este trabajo): (1) `tests/test_ui_helpers.py::test_invalid_upload_is_rejected` fallaba en Windows por un `PermissionError` al limpiar un `tempfile.TemporaryDirectory()` después de que `fitz` fallara al abrir un PDF inválido (el handle del archivo tarda en liberarse) — arreglado con `ignore_cleanup_errors=True` en `app/helpers.py`; (2) confirmado que mi detección de JavaScript embebido (sin falsos positivos, ver entrada de Fase 5) sobrevivió intacta la reconciliación de Bianca — la nota "no portado" en esa entrada se refería al intento propio de Bianca, no al mío.
+
+**Lección para el equipo**: comitear el trabajo antes de terminar una sesión, aunque parezca que "ya se va a seguir después" — perder un día de trabajo real por no comitear es más caro que el hábito de comitear seguido.
+
+**Estado**: confirmado, 122/122 tests pasan, corrida real re-verificada dos veces (la primera con el bug de contexto, la segunda limpia).
+**Gaps abiertos**: ninguno nuevo. TC14 y TC15 quedan como limitaciones conocidas y genuinas, no como pendientes de arreglo a ciegas.
 
 ## [2026-11-14] Fase 5 — reconciliación de dos implementaciones paralelas
 

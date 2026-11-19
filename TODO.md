@@ -11,8 +11,7 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 - [x] Completar secciones 12-16 del anteproyecto (Evaluación con 25 casos, Seguridad con 7 casos adversarios, Riesgos, Plan de Trabajo, Referencias)
 - [x] Alinear el formato de salida (`answer`, `sources`, `abstained`, `tool_used`, `needs_human_review`) con `evidence_level` como extensión del esquema
 - [x] **Decisión de equipo**: se queda en 2 integrantes (Mónica, Bianca) — decisión final.
-- [ ] Reasignar en la sección 15 (Plan de Trabajo) las tareas que estaban asignadas a "Integrante 3" (interfaz en Fase 3, evaluación en Fase 4) entre Mónica y Bianca — pendiente, se hace más adelante
-- [ ] Llenar fechas concretas en la sección 15 (actualmente placeholders `[fecha]`)
+- [x] **Reasignadas las tareas de "Integrante 3" y llenadas las fechas reales** en `PLAN_DE_TRABAJO.md` (listo para copiar a la sección 15): evaluación → Mónica, interfaz → Bianca, fechas tomadas de `git log`, no inventadas. Incluye también las tareas no contempladas en el plan original (interfaz Streamlit, migración a conda, reconciliación de Fase 5, 2 bugs preexistentes encontrados).
 - [ ] Entregar anteproyecto
 
 ## Fase 2 — Línea Base
@@ -67,11 +66,11 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 - [x] **Contradicción (TC08) resuelta cambiando de modelo, no con más prompt engineering**: se probó `qwen/qwen3.5-9b` (texto puro, razonamiento) en vez de `qwen2.5-vl-7b-instruct` (visión-lenguaje). Se encontró y arregló un bug de compatibilidad en el camino (`reasoning_content` vs `content`, ver DECISIONS.md, ahora arreglado en `src/agent/llm_client.py` de forma genérica para cualquier modelo "thinking").
 - [x] **Segunda corrida completa con el modelo nuevo** (corpus de 20 docs, más difícil): Recall@5=100% (21/21), **clasificación=69.57% (16/23)** — más del doble, sin fallas de generación y sin falsos positivos peligrosos; los 7 casos restantes son todos calibración conservadora (segura), no errores de razonamiento.
 - [x] **Clasificación mejorada a 86.96% (20/23)** con dos causas raíz arregladas de verdad (no prompt tuning): (1) `validate_citations` tomaba IDs de arXiv como cifras factuales a verificar — arreglado excluyéndolos antes de extraer números; (2) bug real de datos: `version` estaba hardcodeado en "1" para los 20 documentos del corpus pese a que `source` sí tenía el sufijo correcto — arreglado en `src/ingestion/arxiv_source.py` (`extract_version()`) y parcheados los datos existentes. Un tercer intento (endurecer la regla de "hechos compuestos" en el prompt) causó una regresión neta (dos casos que antes pasaban empezaron a fallar) y se revirtió. Se confirmó no-determinismo residual del motor local en casos límite (mismo código, dos corridas, conjuntos de fallos distintos). Ver DECISIONS.md para el detalle completo.
-- [ ] Recalibrar `expected_evidence_level` en varios casos del banco (algunos esperaban "suficiente" donde "parcial" es defendible — ver DECISIONS.md)
-- [ ] TC14: posible gap de metodología propia, no del sistema — Recall@5 usa overlap "any" contra `expected_sources`, por lo que un caso compuesto (dos documentos esperados) puede marcar `recall_hit=True` con solo uno de los dos recuperado. Revisar si conviene una métrica "all" para casos multi-documento.
+- [x] **TC14 arreglado — era un gap de metodología propia, no del sistema**: Recall@5 usaba overlap "any" incluso en casos compuestos que necesitan AMBOS documentos. Cambiado a exigir el conjunto completo salvo en la categoría "ambigua". Recall@5 real: 100%→95.24% (20/21) — expone el hueco real de TC14 en vez de esconderlo.
+- [x] **Recalibrar `expected_evidence_level` — revisado, sin cambios necesarios**: los únicos 2 casos que no coinciden (TC14, TC15) tienen causa real y documentada, no una etiqueta mal calibrada. No se tocó `test_cases.json`.
 - [x] Implementar límites duros de parámetros (`top_k≤20`, `max_claims≤15`, anteproyecto sección 11) en `src/limits.py`, aplicados en `HybridRetriever.search`, `extract_claims` y `run_pipeline` (3 tests nuevos). Confirmado también en `run_eval.py` contra el sistema real: TH03 ya da `hard_cap_top_k_20_enforced: true`.
-- [ ] Calcular métricas adicionales: MRR, cobertura fáctica, latencia (media/P95), tokens/invocaciones/costo
-- [ ] Comparar línea base (Fase 2, solo semántico) vs. versión mejorada (Fase 3, híbrido) con el mismo banco — hoy solo se corrió contra la versión mejorada
+- [x] **Métricas adicionales calculadas**: MRR (0.921), latencia de búsqueda (media 0.119s) y de `evaluate_claim` (media 94.6s por un outlier de 1609s en TC09; P95 48.3s, más representativo), tokens/invocaciones (52 llamadas, 165,864 tokens en la corrida de 23 casos). Ver DECISIONS.md.
+- [x] **Comparación línea base (Fase 2, solo semántico) vs. versión mejorada (Fase 3, híbrido) — hecha** con `scripts/run_baseline_vs_improved.py`, mismo banco, mismo pipeline de evaluate_claim. Ver DECISIONS.md para la tabla con los números reales.
 
 ## Fase 5 — Seguridad
 
@@ -87,7 +86,7 @@ Decisiones y gaps se registran en [DECISIONS.md](DECISIONS.md), no aquí.
 - [x] **Ejecutado SEC01-SEC07 contra el sistema real** (corpus completo + LM Studio `qwen/qwen3.5-9b`) con `scripts/run_security_eval.py` — **7/7 casos pasan**. Tabla de "Resultado observado" lista para copiar al anteproyecto, ver DECISIONS.md.
 
 - [x] Topes de agente portados sobre la implementación de Mónica: 3 iteraciones por afirmación, 120 llamadas LLM por corrida, 10 llamadas externas por afirmación, validación de DOI, filtro `owner_id` antes del recorte (ver DECISIONS.md 2026-11-14)
-- [ ] Decidir en equipo si `owner_id=None` debe ocultar chunks privados (hoy no filtra nada)
+- [x] **Decidido: `owner_id=None` ahora oculta chunks privados de todos** (seguro por defecto). Antes desactivaba el filtro por completo; ahora solo deja ver chunks públicos (`owner_id=None`) cuando no hay identidad — coincide con lo que dice el anteproyecto ("los PDFs de usuario solo se recuperan dentro de su sesión"). Cero regresión en el corpus compartido actual (todos sus chunks ya son públicos). Ver DECISIONS.md (2026-11-19) y `tests/test_hybrid.py`.
 
 - [x] Interfaz Streamlit (`app/streamlit_app.py`, lógica en `app/helpers.py`): subir PDF (validación SEC06 + `owner_id` de sesión), analizar documento o verificar una afirmación suelta, resumen por nivel de evidencia, fuentes con el fragmento citado y JSON de salida. Correr con `streamlit run app/streamlit_app.py`. Probada de punta a punta con LM Studio (bonsai-27b, 222 fragmentos): verificar afirmación suelta y analizar D07 (2 afirmaciones, ambas suficiente) funcionan; tarda ~5 min por afirmación con este modelo.
 

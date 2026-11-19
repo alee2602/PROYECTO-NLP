@@ -121,9 +121,27 @@ def test_owner_id_filter_still_allows_shared_public_chunks():
     assert "userB_0" not in returned_ids
 
 
-def test_no_owner_id_means_no_filtering_at_all():
-    """Comportamiento por defecto (corpus compartido actual, sin owner_id en
-    la llamada): no debe cambiar nada respecto a antes de SEC03."""
+def test_no_owner_id_means_no_filtering_for_an_all_public_corpus():
+    """Comportamiento por defecto con el corpus compartido actual (todos
+    los chunks owner_id=None): sin pasar owner_id se sigue viendo todo,
+    porque todo es público -- no porque el filtro esté desactivado."""
+    chunks = [
+        _make_chunk("doc_a", "DA", "retrieval topic number one"),
+        _make_chunk("doc_b", "DB", "retrieval topic number one"),
+    ]
+    retriever = HybridRetriever()
+    retriever.index_chunks(chunks)
+
+    results = retriever.search("retrieval topic number one", top_k=5)
+
+    returned_ids = {r.chunk.chunk_id for r in results}
+    assert returned_ids == {"doc_a", "doc_b"}
+
+
+def test_no_owner_id_hides_private_chunks_from_everyone():
+    """Decisión de equipo (2026-11-19, ver DECISIONS.md): seguro por
+    defecto. Sin identidad (owner_id=None) no deben verse chunks privados
+    de NADIE, ni siquiera de quien subió el PDF sin indicar su owner_id."""
     chunks = [
         _make_chunk("userA_0", "DA", "retrieval topic number one", owner_id="userA"),
         _make_chunk("userB_0", "DB", "retrieval topic number one", owner_id="userB"),
@@ -133,8 +151,7 @@ def test_no_owner_id_means_no_filtering_at_all():
 
     results = retriever.search("retrieval topic number one", top_k=5)
 
-    returned_ids = {r.chunk.chunk_id for r in results}
-    assert returned_ids == {"userA_0", "userB_0"}
+    assert results == []
 
 
 def test_owner_filter_is_applied_before_trimming_candidate_pool():

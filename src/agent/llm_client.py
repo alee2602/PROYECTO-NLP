@@ -23,6 +23,12 @@ class LLMClient:
         self.base_url = (base_url or os.getenv("LLM_BASE_URL", DEFAULT_BASE_URL)).rstrip("/")
         self.api_key = api_key or os.getenv("LLM_API_KEY", "lm-studio")
         self.timeout = int(os.getenv("LLM_TIMEOUT", timeout))
+        # Fase 4: métricas operativas acumuladas (tokens/invocaciones), para
+        # poder reportar costo aproximado sin tener que instrumentar cada
+        # llamador por separado -- ver scripts/run_eval.py.
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
+        self.total_calls = 0
 
     def chat(
         self,
@@ -46,7 +52,12 @@ class LLMClient:
             timeout=self.timeout,
         )
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        usage = data.get("usage") or {}
+        self.total_prompt_tokens += usage.get("prompt_tokens", 0)
+        self.total_completion_tokens += usage.get("completion_tokens", 0)
+        self.total_calls += 1
+        return data
 
 
 def get_client(base_url: str | None = None, api_key: str | None = None) -> LLMClient:

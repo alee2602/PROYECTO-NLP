@@ -48,7 +48,11 @@ def ingest_upload(
     """Valida e ingesta un PDF subido. Lanza PDFValidationError si se rechaza
     (SEC06). Los chunks quedan asociados a owner_id (SEC03)."""
     document_id = f"U{uuid.uuid4().hex[:6].upper()}"
-    with tempfile.TemporaryDirectory() as tmp:
+    # ignore_cleanup_errors: en Windows, cuando fitz.open() falla al parsear
+    # un PDF inválido, MuPDF puede tardar en liberar el handle del archivo;
+    # sin esto, el cleanup del TemporaryDirectory lanza PermissionError justo
+    # cuando lo que queríamos reportar era el PDFValidationError original.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         path = Path(tmp) / "upload.pdf"
         path.write_bytes(data)
         _, chunks = ingest_document(
