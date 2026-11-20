@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 760" font-family="Verdana, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333333"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1320" height="760" fill="#ffffff"/>
+
+  <text x="660" y="40" text-anchor="middle" font-size="24" font-weight="bold" fill="#1a1a2e">Arquitectura de Evidentia</text>
+
+  <!-- Box 1: Entrada -->
+  <rect x="20" y="260" width="150" height="130" rx="10" fill="#eef2f7" stroke="#2c3e70" stroke-width="2"/>
+  <text x="95" y="315" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a1a2e">Documento</text>
+  <text x="95" y="335" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a1a2e">o afirmacion</text>
+
+  <path d="M170,325 L210,325" stroke="#333333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Box 2: Extraccion -->
+  <rect x="210" y="230" width="230" height="190" rx="10" fill="#e8f0fe" stroke="#2c3e70" stroke-width="2"/>
+  <text x="325" y="265" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a1a2e">Extraccion de</text>
+  <text x="325" y="286" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a1a2e">afirmaciones</text>
+  <text x="325" y="320" text-anchor="middle" font-size="13" fill="#333333">Modelo de lenguaje</text>
+  <text x="325" y="340" text-anchor="middle" font-size="13" fill="#333333">mas filtro propio que</text>
+  <text x="325" y="360" text-anchor="middle" font-size="13" fill="#333333">descarta afirmaciones</text>
+  <text x="325" y="380" text-anchor="middle" font-size="13" fill="#333333">demasiado vagas</text>
+
+  <path d="M440,325 L480,325" stroke="#333333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Box 3: Recuperacion hibrida -->
+  <rect x="480" y="230" width="250" height="190" rx="10" fill="#e8f0fe" stroke="#2c3e70" stroke-width="2"/>
+  <text x="605" y="265" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a1a2e">Recuperacion</text>
+  <text x="605" y="286" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a1a2e">hibrida</text>
+  <text x="605" y="320" text-anchor="middle" font-size="13" fill="#333333">Semantica 70 por ciento</text>
+  <text x="605" y="340" text-anchor="middle" font-size="13" fill="#333333">BM25 propio 30 por ciento</text>
+  <text x="605" y="360" text-anchor="middle" font-size="13" fill="#333333">mas refuerzo para</text>
+  <text x="605" y="380" text-anchor="middle" font-size="13" fill="#333333">identificadores tecnicos</text>
+
+  <path d="M730,325 L770,325" stroke="#333333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Box 4: Evaluacion de evidencia (contenedor) -->
+  <rect x="770" y="90" width="280" height="470" rx="10" fill="#fdf3e7" stroke="#8a5a1e" stroke-width="2"/>
+  <text x="910" y="120" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a1a2e">Evaluacion de evidencia</text>
+  <text x="910" y="142" text-anchor="middle" font-size="13" fill="#333333">Modelo de lenguaje mas tres</text>
+  <text x="910" y="160" text-anchor="middle" font-size="13" fill="#333333">verificaciones de codigo</text>
+
+  <rect x="792" y="185" width="236" height="100" rx="8" fill="#ffffff" stroke="#8a5a1e" stroke-width="1.5"/>
+  <text x="910" y="215" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a2e">Validacion de citas</text>
+  <text x="910" y="235" text-anchor="middle" font-size="12" fill="#333333">La cita existe de verdad y</text>
+  <text x="910" y="252" text-anchor="middle" font-size="12" fill="#333333">las cifras aparecen</text>
+  <text x="910" y="269" text-anchor="middle" font-size="12" fill="#333333">literalmente en el texto</text>
+
+  <rect x="792" y="295" width="236" height="100" rx="8" fill="#ffffff" stroke="#8a5a1e" stroke-width="1.5"/>
+  <text x="910" y="325" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a2e">Deteccion de manipulacion</text>
+  <text x="910" y="345" text-anchor="middle" font-size="12" fill="#333333">Detecta intentos de alterar</text>
+  <text x="910" y="362" text-anchor="middle" font-size="12" fill="#333333">las instrucciones del sistema</text>
+  <text x="910" y="379" text-anchor="middle" font-size="12" fill="#333333">desde la afirmacion o el PDF</text>
+
+  <rect x="792" y="405" width="236" height="100" rx="8" fill="#ffffff" stroke="#8a5a1e" stroke-width="1.5"/>
+  <text x="910" y="435" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a2e">Verificacion de contradiccion</text>
+  <text x="910" y="455" text-anchor="middle" font-size="12" fill="#333333">Segunda llamada al modelo</text>
+  <text x="910" y="472" text-anchor="middle" font-size="12" fill="#333333">especializada en detectar</text>
+  <text x="910" y="489" text-anchor="middle" font-size="12" fill="#333333">contradiccion directa</text>
+
+  <path d="M1050,325 L1090,325" stroke="#333333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Box 5: Resultado -->
+  <rect x="1090" y="230" width="210" height="190" rx="10" fill="#eafaf0" stroke="#1e7a4c" stroke-width="2"/>
+  <text x="1195" y="265" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a1a2e">Resultado</text>
+  <text x="1195" y="286" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a1a2e">estructurado</text>
+  <text x="1195" y="320" text-anchor="middle" font-size="13" fill="#333333">Respuesta y fuentes</text>
+  <text x="1195" y="340" text-anchor="middle" font-size="13" fill="#333333">Abstencion</text>
+  <text x="1195" y="360" text-anchor="middle" font-size="13" fill="#333333">Revision humana</text>
+  <text x="1195" y="380" text-anchor="middle" font-size="13" fill="#333333">Nivel de evidencia</text>
+
+  <!-- Footer: orquestacion -->
+  <rect x="20" y="600" width="1280" height="130" rx="10" fill="#f4f4f6" stroke="#555555" stroke-width="1.5"/>
+  <text x="660" y="630" text-anchor="middle" font-size="15" font-weight="bold" fill="#1a1a2e">Orquestado con LangGraph</text>
+  <text x="660" y="655" text-anchor="middle" font-size="13" fill="#333333">Extraer, buscar, evaluar, y si falta evidencia, volver a buscar una sola vez antes de finalizar</text>
+  <text x="660" y="678" text-anchor="middle" font-size="13" fill="#333333">Tope duro de iteraciones por afirmacion y de llamadas al modelo por corrida completa</text>
+  <text x="660" y="701" text-anchor="middle" font-size="13" fill="#333333">para que el agente nunca pueda quedar buscando sin control</text>
+</svg>

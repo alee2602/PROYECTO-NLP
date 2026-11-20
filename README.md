@@ -8,6 +8,14 @@ Proyecto final del curso CC3103, Procesamiento de Lenguaje Natural, Universidad 
 
 Evidentia analiza afirmaciones presentes en documentos académicos y evalúa si cuentan con evidencia de respaldo dentro de un corpus de fuentes documentales autorizadas, usando procesamiento de lenguaje natural, recuperación aumentada de información y un flujo agéntico. Cada resultado incluye los fragmentos y las referencias documentales usados, de modo que el propio usuario pueda verificarlos.
 
+## Video de demostración
+
+[Ver la demostración en video](https://canva.link/rzpmkv3vawo5fsl)
+
+## Arquitectura
+
+![Diagrama de arquitectura de Evidentia](docs/diagrama_arquitectura.svg)
+
 ## Estructura del repositorio
 
 ```
@@ -143,6 +151,22 @@ streamlit run app/streamlit_app.py
 ```
 
 Requiere que el servidor de LM Studio esté activo, según se describe arriba, y que el corpus ya exista en `data/processed/chunks.jsonl`, lo cual se logra corriendo `python scripts/build_corpus.py`.
+
+## Ejemplos de uso
+
+Las siguientes capturas muestran la pestaña de verificación de una afirmación suelta, con el modelo `qwen/qwen3.5-9b` corriendo de forma local, para los tres niveles de evidencia que el sistema puede asignar.
+
+![Ejemplo de evidencia suficiente](docs/capturas/evidencia_suficiente.png)
+
+La afirmación de este primer ejemplo está tomada casi textualmente de uno de los documentos del corpus. El sistema la clasifica como evidencia suficiente y cita tres fragmentos distintos del mismo documento, cada uno con su página y su identificador de fragmento, de modo que la fuente original puede revisarse directamente.
+
+![Ejemplo de evidencia parcial](docs/capturas/evidencia_parcial.png)
+
+Esta segunda afirmación se redactó a propósito en el sentido contrario a lo que dice el documento. El sistema detecta que los fragmentos recuperados en realidad contradicen la afirmación, en lugar de respaldarla, así que la clasifica como evidencia parcial y marca que necesita revisión humana, sin importar que las palabras de la afirmación coincidan superficialmente con el tema del documento.
+
+![Ejemplo de evidencia no localizada](docs/capturas/evidencia_no_localizada.png)
+
+Esta última afirmación trata un tema ausente del corpus. En lugar de forzar una respuesta, el sistema se abstiene, no cita ninguna fuente y marca igualmente que necesita revisión humana. Este comportamiento de abstención ante falta de evidencia es un principio de diseño central del proyecto, descrito con más detalle en `DECISIONS.md`.
 
 ## Integrantes
 
